@@ -18,18 +18,14 @@ struct LogCommand: CommandProtocol {
 }
 
 struct LogOptions: OptionsProtocol {
-  let lines: Int
-  let verbose: Bool
-  let logName: String
+  let logName: String?
 
-  static func create(_ lines: Int) -> (Bool) -> (String) -> LogOptions {
-    return { verbose in { logName in LogOptions(lines: lines, verbose: verbose, logName: logName) } }
+  static func create(_ logName: String?) -> LogOptions {
+    return LogOptions(logName: logName)
   }
 
   static func evaluate(_ m: CommandMode) -> Result<LogOptions, CommandantError<BasicError>> {
     return create
-      <*> m <| Option(key: "lines", defaultValue: 0, usage: "the number of lines to read from the logs")
-      <*> m <| Option(key: "verbose", defaultValue: false, usage: "show verbose output")
       <*> m <| Argument(usage: "the log to read")
   }
 }
@@ -45,9 +41,13 @@ let verb = arguments.count > 0 ?  arguments[1] : "log"
 // Remove the command name.
 var margs = arguments
 margs.remove(at: 0)
-if let result = commands.run(command: verb, arguments: margs) {
-  // Handle success or failure.
-} else {
-  // Unrecognized command.
+do {
+  if let result = commands.run(command: verb, arguments: margs) {
+    // Handle success or failure.
+  } else {
+    print("Unrecognized command")
+  } 
+} catch {
+  print("Error", error)
 }
 
