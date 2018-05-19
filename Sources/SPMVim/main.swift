@@ -37,23 +37,17 @@ struct LogOptions: OptionsProtocol {
 let commands = CommandRegistry<BasicError>()
 commands.register(LogCommand())
 
-var arguments = CommandLine.arguments
-
+// Commandant Boilderplate
+let arguments = CommandLine.arguments
 // Remove the executable name.
-assert(!arguments.isEmpty)
-arguments.remove(at: 0)
+let verb = arguments.count > 0 ?  arguments[1] : "log"
 
-print("Run")
-if let verb = arguments.first {
-  // Remove the command name.
-  arguments.remove(at: 0)
-
-  if let result = commands.run(command: verb, arguments: arguments) {
-    // Handle success or failure.
-  } else {
-    // Unrecognized command.
-  }
+// Remove the command name.
+var margs = arguments
+margs.remove(at: 0)
+if let result = commands.run(command: verb, arguments: margs) {
+  // Handle success or failure.
 } else {
-  // No command given.
+  // Unrecognized command.
 }
 
