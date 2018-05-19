@@ -8,7 +8,7 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/Carthage/Commandant", from: "0.13.0"),
-        .package(url: "https://github.com/jerrymarino/SwiftCompilationDatabase.git", .revision( "810f040e97ebe97210d64a644d8d386e35a6358d")),
+        .package(url: "/Users/jerrymarino/Projects/SwiftCompilationDatabase/", .branch("master")),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.

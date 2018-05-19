@@ -26,12 +26,12 @@ release: build-impl
 .PHONY: run
 run: CONFIG=debug
 run: build-impl
-	cat parseable-output-example.txt | .build/$(CONFIG)/$(PRODUCT)
+	cat Examples/parseable-output-example.txt | .build/$(CONFIG)/$(PRODUCT)
 
 .PHONY: run_compile_commands
 run_compile_commands: CONFIG=debug
 run_compile_commands: build-impl
-	.build/$(CONFIG)/$(PRODUCT) compile_commands parseable-output-example.txt 
+	.build/$(CONFIG)/$(PRODUCT) compile_commands Examples/parseable-output-example.txt 
 
 .PHONY: clean
 clean:
@@ -45,5 +45,5 @@ clean:
 compile_commands.json: SWIFT_OPTS=-Xswiftc -parseable-output
 compile_commands.json: CONFIG=debug
 compile_commands.json: clean build-impl
-	cat $(LAST_LOG) | /usr/local/bin/$(PRODUCT) 
+	cat $(LAST_LOG) | /usr/local/bin/$(PRODUCT) compile_commands
 

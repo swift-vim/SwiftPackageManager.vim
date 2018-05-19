@@ -39,9 +39,9 @@
       },
       {
         "package": "SwiftCompilationDatabase",
-        "repositoryURL": "https://github.com/jerrymarino/SwiftCompilationDatabase.git",
+        "repositoryURL": "/Users/jerrymarino/Projects/SwiftCompilationDatabase",
         "state": {
-          "branch": null,
+          "branch": "master",
           "revision": "810f040e97ebe97210d64a644d8d386e35a6358d",
           "version": null
         }

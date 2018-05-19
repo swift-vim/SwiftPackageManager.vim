@@ -117,8 +117,7 @@ let verb = arguments.count > 0 ?  arguments[1] : "log"
 var margs = arguments
 margs.remove(at: 0)
 do {
-  if let result = commands.run(command: verb, arguments: margs) {
-    // Handle success or failure.
+  if let _ = commands.run(command: verb, arguments: margs) {
   } else {
     print("Unrecognized command")
   } 
