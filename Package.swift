@@ -5,11 +5,6 @@ import PackageDescription
 
 let package = Package(
     name: "SPMVim",
-    products: [
-        .library(
-            name: "SPMVim",
-            targets: ["SPMVim"]),
-    ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/Carthage/Commandant", from: "0.13.0"),
