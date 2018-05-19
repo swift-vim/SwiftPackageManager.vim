@@ -34,4 +34,5 @@ struct LogOptions: OptionsProtocol {
 	}
 }
 
-
+let commands = CommandRegistry<BasicError>()
+commands.register(LogCommand())
