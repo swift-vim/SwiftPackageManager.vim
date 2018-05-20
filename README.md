@@ -4,7 +4,7 @@ SwiftPackageManager.vim makes using Swift with Vim awesome.
 
 It's a command line tool and Vim plugin that's easy to use.
 
-Status: In progress see [Feature Roadmap](#feature-roadmap)
+*Status: In progress see [Feature Roadmap](#feature-roadmap)*
 
 ## Background
 
@@ -23,12 +23,13 @@ evolve.
 
 ### Solution
 
-Create a unified system under the assumption that Swift Package Manager will be
-used as the package manager and build system. 
+Create a unified system under the assumption that [Swift Package
+Manager](https://github.com/apple/swift-package-manager) will be used as the
+package manager and build system. 
 
 It achieves this by utilizing and enhancing existing open source plugins. It
 fills existing gaps by making the assumption on SPM when needed and supports
-SPM first class citizen.
+SPM as a first class citizen.
 
 *SPM is a reasonable common denominator, as it has gained momentum in the
 community and is a first class citizen in swift.*
@@ -47,50 +48,51 @@ Xcode support. It is already possible to set this up with existing tools.
 
 ### Code Completion and Diagnostics
 
-Status: Working / In Progress
+*Status: Working / In Progress*
 
-Support for Code Completion in Swift Package Manager Projects. The core plugin is [iCompleteMe](https://github.com/jerrymarino/iCompleteMe).
+Support for Code Completion in Swift Package Manager Projects.
 
-- [x] Generate `compile_commands.json` for Swift Package Manager projects 
+- [x] Invoke completions and display real time diagnostics via [iCompleteMe](https://github.com/jerrymarino/iCompleteMe).
+- [x] Generate `compile_commands.json` for Swift Package Manager projects via [SwiftCompilationDatabase](https://github.com/jerrymarino/SwiftCompilationDatabase)
+
+### Playgrounds
+
+*Status: In Progress*
+
+Create and experiment with Playgrounds for Swift Package Manager Projects.
+
+This is fundamental playground support for Vim, and has the ability to:
+
+- [x] Display playground output in Vim via [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
+- [ ] Generate Playgrounds
+- [ ] Easily access SPM dependencies in playgrounds
 
 ### Build Support
 
-Status: TODO
+*Status: TODO*
 
 Integrate with Swift Package Manager's build system
 
 - [ ] See build errors and warnings in Vim
 
-### Playgrounds
-
-Status: In Progress
-
-Create and experiment Playgrounds with Swift Package Manager Projects.
-
-This is fundamental playground support for Vim, and has the ability to:
-
-- [x] Display playground output in Vim [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
-- [ ] Generate Playgrounds
-- [ ] Integrate Swift Package Manager dependencies into the Playground
-
 ### Debugger
 
-Status: TODO
+*Status: TODO*
 
 A lightweight "plugin" for [swift-lldb](https://github.com/apple/swift-lldb). Support should be fast and utilize
 the LLDB shell running in another process for most interaction.
 
 Features:
-- [ ] Add and remove breakpoints from vim
-- [ ] When the debugger hits a breakpoint it open the file in vim at that line
+- [ ] Add and remove breakpoints from Vim
+- [ ] When the debugger hits a breakpoint it open the file in Vim at that line
 
 ### Test Support
 
-Status: TODO
+*Status: TODO*
 
 Run tests and see failing output in Vim.
 
 ## Contributing
 
-Contributors welcome!
+Contributions in the form of issues, documentation, PRs, bugs, or any feedback are welcome.
 
