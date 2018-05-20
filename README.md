@@ -37,8 +37,7 @@ community and is a first class citizen in swift.**
 
 ### github.com/swift-vim
 
-swift-vim is the central organization where projects live. Development 
-happens in the open.
+[swift-vim](https://github.com/swift-vim/SwiftPackageManager.vim) is the central organization where projects live. Development happens in the open.
 
 ## Non Goals
 
