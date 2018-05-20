@@ -36,7 +36,7 @@ community and is a first class citizen in swift.**
 
 ### github.com/swift-vim
 
-[swift-vim](https://github.com/swift-vim/SwiftPackageManager.vim) is the central organization where projects live. Development happens in the open.
+- [swift-vim](https://github.com/swift-vim/SwiftPackageManager.vim) is the central organization where projects live. Development happens in the open.
 
 ## Non Goals
 
@@ -52,7 +52,7 @@ Status: Working / In Progress
 
 Support for Code Completion in Swift Package Manager Projects. The core plugin is [iCompleteMe](https://github.com/jerrymarino/iCompleteMe).
 
-[x] Generate `compile_commands.json` for Swift Package Manager projects 
+- [x] Generate `compile_commands.json` for Swift Package Manager projects 
 
 ### Build Support
 
@@ -60,7 +60,7 @@ Status: TODO
 
 Integrate with Swift Package Manager's build system
 
-[] See build errors and warnings in Vim
+- [ ] See build errors and warnings in Vim
 
 ### Playgrounds
 
@@ -70,9 +70,9 @@ Create and experiment Playgrounds with Swift Package Manager Projects.
 
 This is fundamental playground support for Vim, and has the ability to:
 
-[x] Display playground output in Vim [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
-[] Generate Playgrounds
-[] Integrate Swift Package Manager dependencies into the Playground
+- [x] Display playground output in Vim [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
+- [ ] Generate Playgrounds
+- [ ] Integrate Swift Package Manager dependencies into the Playground
 
 ### Debugger
 
@@ -82,8 +82,8 @@ A lightweight "plugin" for [swift-lldb](https://github.com/apple/swift-lldb). Su
 the LLDB shell running in another process for most interaction.
 
 Features:
-[] Add and remove breakpoints from vim
-[] When the debugger hits a breakpoint it open the file in vim at that line
+- [ ] Add and remove breakpoints from vim
+- [ ] When the debugger hits a breakpoint it open the file in vim at that line
 
 ### Test Support
 
