@@ -6,13 +6,20 @@ import Foundation
 func getPath(path: String?, relativeTo: String) -> String? {
     if let path = path,
         path.utf8.count > 0 {
-      return path.hasSuffix("/") ? path : relativeTo + "/" + path
+        return path.hasSuffix("/") ? path : relativeTo + "/" + path
     }
     return nil
 }
 
 enum BasicError : Error {
     case message(String)
+
+    var localizedDescription: String {
+        switch self {
+        case .message(let value):
+            return value
+        }
+    }
 }
 
 struct LogCommand: CommandProtocol {
@@ -132,7 +139,12 @@ let _ = {
           case .success:
               return
           case .failure(let error):
-            print("Failed:", error)
+              switch error {
+              case .usageError(let description):
+                  print(description)
+              case .commandError(let clientError):
+                  print(clientError.localizedDescription)
+              }
           }
       } else {
           print("Unrecognized command")
