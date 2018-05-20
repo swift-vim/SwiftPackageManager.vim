@@ -2,10 +2,9 @@
 
 SwiftPackageManager.vim makes using Swift with Vim awesome.
 
-It's a command line tool and Vim plugin that makes using Vim with SPM projects
-easy.
+It's a command line tool and Vim plugin that's easy to use.
 
-Status: In progress see [Feature Roadmap]()
+Status: In progress see [Feature Roadmap](#feature-roadmap)
 
 ## Background
 
@@ -43,7 +42,7 @@ community and is a first class citizen in swift.**
 
 It doesn't reimplement replace language level features, like [syntax highlighting](https://github.com/keith/swift.vim), or [playgrounds](https://github.com/jerrymarino/SwiftPlayground.vim).
 
-Xcode support. It is already possible to piece together existing tools to use Vim with Xcode projects.
+Xcode support. It is already possible to set this up with existing tools.
 
 ## Feature Roadmap
 
@@ -53,7 +52,7 @@ Status: Working / In Progress
 
 Support for Code Completion in Swift Package Manager Projects. The core plugin is [iCompleteMe](https://github.com/jerrymarino/iCompleteMe).
 
-- [x] Generate Configuration for Swift Package Manager projects ( `compile_commands.json` ) 
+[x] Generate `compile_commands.json` for Swift Package Manager projects 
 
 ### Build Support
 
@@ -61,7 +60,7 @@ Status: TODO
 
 Integrate with Swift Package Manager's build system
 
-- [] see build errors and warnings in Vim
+[] See build errors and warnings in Vim
 
 ### Playgrounds
 
@@ -71,30 +70,26 @@ Create and experiment Playgrounds with Swift Package Manager Projects.
 
 This is fundamental playground support for Vim, and has the ability to:
 
-- [x] Display playground output in Vim [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
-- [] Generate Playgrounds
-- [] Integrate Swift Package Manager dependencies into the Playground
+[x] Display playground output in Vim [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
+[] Generate Playgrounds
+[] Integrate Swift Package Manager dependencies into the Playground
 
 ### Debugger
 
 Status: TODO
 
-A lightweight "plugin" for [swift-lldb](). Support should be fast and utilize
+A lightweight "plugin" for [swift-lldb](https://github.com/apple/swift-lldb). Support should be fast and utilize
 the LLDB shell running in another process for most interaction.
 
 Features:
-- Add and remove breakpoints from vim
-- When the debugger hits a breakpoint it open the file in vim at that line
+[] Add and remove breakpoints from vim
+[] When the debugger hits a breakpoint it open the file in vim at that line
 
 ### Test Support
 
 Status: TODO
 
 Run tests and see failing output in Vim.
-
-### Distribution and Installation
-
-SwiftPackageManager.vim installs with your Vim Plugin manager of choice.
 
 ## Contributing
 
