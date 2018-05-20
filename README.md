@@ -15,10 +15,9 @@ plugins and build systems to create a reasonable experience solving for every
 possible tooling combination.
 
 In many scenarios, it isn't possible to implement features without making some
-assumptions. We are left with very abstract tools that are too hard to
-implement and use.
+assumptions. The result is abstract tools that are to implement and use.
 
-Additionally, it is too difficult and time consuming to maintain everything as
+Additionally, it is difficult and time consuming to maintain everything as
 Xcode, Swift, Bazel, CocoaPods, Carthage, Vim and other tools in this ecosystem
 evolve.
 
@@ -31,8 +30,8 @@ It achieves this by utilizing and enhancing existing open source plugins. It
 fills existing gaps by making the assumption on SPM when needed and supports
 SPM first class citizen.
 
-**SPM is a reasonable common denominator, as it has gained momentum in the
-community and is a first class citizen in swift.**
+*SPM is a reasonable common denominator, as it has gained momentum in the
+community and is a first class citizen in swift.*
 
 ### github.com/swift-vim
 
@@ -40,7 +39,7 @@ community and is a first class citizen in swift.**
 
 ## Non Goals
 
-It doesn't reimplement replace language level features, like [syntax highlighting](https://github.com/keith/swift.vim), or [playgrounds](https://github.com/jerrymarino/SwiftPlayground.vim).
+It doesn't reimplement language level features, like [syntax highlighting](https://github.com/keith/swift.vim), or [playgrounds](https://github.com/jerrymarino/SwiftPlayground.vim).
 
 Xcode support. It is already possible to set this up with existing tools.
 
