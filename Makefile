@@ -26,7 +26,7 @@ release: build-impl
 .PHONY: run
 run: CONFIG=debug
 run: build-impl
-	cat Examples/parseable-output-example.txt | .build/$(CONFIG)/$(PRODUCT)
+	cat Examples/parseable-output-example.txt | .build/$(CONFIG)/$(PRODUCT) log
 
 .PHONY: run_compile_commands
 run_compile_commands: CONFIG=debug

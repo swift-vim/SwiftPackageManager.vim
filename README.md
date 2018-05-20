@@ -5,6 +5,8 @@ SwiftPackageManager.vim makes using Swift with Vim awesome.
 It's a command line tool and Vim plugin that makes using Vim with SPM projects
 easy.
 
+Status: In progress see [Feature Roadmap]()
+
 ## Background
 
 ### Problem
