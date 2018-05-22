@@ -12,6 +12,8 @@ install: build-impl
 .PHONY: build-impl
 build-impl:
 	@echo "Building.."
+	@mkdir -p .build/$(CONFIG)
+	@touch $(LAST_LOG)
 	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
 	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT)
 
