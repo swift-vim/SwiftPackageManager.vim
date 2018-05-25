@@ -38,6 +38,15 @@
         }
       },
       {
+        "package": "SKQueue",
+        "repositoryURL": "https://github.com/daniel-pedersen/SKQueue.git",
+        "state": {
+          "branch": null,
+          "revision": "b6dcd7532f90b0c3abbe624d271f64ac7f393ddf",
+          "version": "1.1.0"
+        }
+      },
+      {
         "package": "SwiftCompilationDatabase",
         "repositoryURL": "https://github.com/jerrymarino/SwiftCompilationDatabase.git",
         "state": {

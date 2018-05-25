@@ -114,10 +114,46 @@ struct CompileCommandsOptions: OptionsProtocol {
     }
 }
 
+struct EditorServiceCommand: CommandProtocol {
+    typealias Options = EditorServiceOptions
+    let verb = "editor"
+    let function = "Operates the editor"
+    let usage =  """
+    Usage:
+      Core editor service   
+    """
+
+    func run(_ options: Options) -> Result<(), BasicError> {
+        let host = "http://localhost:" + options.port
+        let service = EditorService(host: host, authToken: options.authToken)
+        service.start()
+        return .success(())
+    }
+}
+
+struct EditorServiceOptions: OptionsProtocol {
+    let authToken: String
+    let port: String
+
+    static func create(_ authToken: String) -> (String) -> EditorServiceOptions {
+        return { port in
+          EditorServiceOptions(authToken: authToken, port: port)
+        }
+    }
+
+    static func evaluate(_ m: CommandMode) -> Result<EditorServiceOptions, CommandantError<BasicError>> {
+        return create
+            <*> m <| Argument(defaultValue: "", usage: "The auth token for the editor interface")
+            <*> m <| Option(key: "port", defaultValue: "0", usage: "port of the editor interface")
+    }
+}
+
+
 /// Main
 let _ = {
       let commands = CommandRegistry<BasicError>()
       commands.register(LogCommand())
+      commands.register(EditorServiceCommand())
       commands.register(CompileCommandsCommand())
 
       // Commandant Boilderplate
