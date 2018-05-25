@@ -1,7 +1,7 @@
 # Wrap SPM build system
 # We call the program this.
 PRODUCT=spm-vim
-LAST_LOG=.build/$(CONFIG)/last.log
+LAST_LOG=.build/last_build.log
 
 .PHONY: install
 install: CONFIG=release
