@@ -20,6 +20,14 @@ build-impl:
 build: CONFIG=debug
 build: build-impl
 
+.PHONY: test
+test: CONFIG=debug
+test:
+	@echo "Testing.."
+	@mkdir -p .build/$(CONFIG)
+	@echo "" > $(LAST_LOG)
+	@swift test -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
+
 .PHONY: release
 release: CONFIG=release
 release: build-impl
