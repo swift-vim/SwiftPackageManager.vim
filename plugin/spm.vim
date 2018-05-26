@@ -20,7 +20,8 @@ let s:path = fnamemodify(expand('<sfile>:p:h'), ':h')
 
 " Setup some autocmds
 autocmd BufWritePost * call s:OnBufWritePost()
-autocmd QuitPre      * call s:Pyeval("server.stop()")
+autocmd QuitPre      * call s:Pyeval("server.Stop()")
+autocmd CursorMoved      * call s:Pyeval("diag_ui.OnCursorMoved()")
 
 " Run some python
 function! s:Pyeval( eval_string )
@@ -41,8 +42,10 @@ plugin_dir  = vim.eval('s:path')
 sys.path.insert(0, os.path.join(plugin_dir, 'plugin_python'))
 
 from server import Server
+from diagnostic_interface import DiagnosticInterface
 server = Server()
-server.start()
+server.Start()
+diag_ui = DiagnosticInterface()
 vim.command('return 1')
 EOF
 endfunction
@@ -73,6 +76,11 @@ fun spm#showerrfile(file)
 			\%f:%l:\ fatal\ error:\ %m,
 			\%f:%l:\ warning:\ %m
     execute "cgetfile " . a:file
+    call s:Pyeval("diag_ui.UpdateBuildState('" . a:file ."')")
+endf
+
+fun spm#showlogs()
+    call s:Pyeval("server.PrintLogs()")
 endf
 
 " This is basic vim plugin boilerplate

@@ -1,6 +1,28 @@
 import Foundation
 import SKQueue
 
+struct SwiftBuildError: Codable {
+    let file: String
+    let line: Int
+    let col: Int
+    let ty: String
+    let message: String
+
+    static func from(line: String) -> SwiftBuildError? {
+        let components = line.components(separatedBy: ":")
+        guard components.count > 4 else {
+            return nil
+        }
+        let file = components[0]
+        let line = Int(components[1])!
+        let col = Int(components[2])!
+        let ty = components[3]
+        let message = components[3] + ":" + components[4]
+        return SwiftBuildError(file: file, line: line, col: col, ty: ty, message: message)
+    }
+}
+
+
 /// EditorService
 /// This is the core plugin backend for SwiftPackageManager.vim
 /// Vim Integration
@@ -12,6 +34,7 @@ struct EditorService: SKQueueDelegate {
 
     /// The editor listens to updates in this log
     static let LastBuildLogPath = ".build/last_build.log"
+    static let VimUIStatePath = ".build/spm_vim_ui.json"
 
     /// vim.command
     func vimCommand(command: String) -> String {
@@ -50,40 +73,49 @@ struct EditorService: SKQueueDelegate {
         return responseStr
     }
 
+    func findPackageRoot(near path: String) -> String? {
+        // Search the current path for a "Package.swift"
+        let components: [String] = path.components(separatedBy: "/")
+        let end = components.endIndex
+
+        // Search sequence from the end of the path to the start
+        let seq = components
+            .lazy
+            .enumerated()
+            .map {
+            state -> String? in
+            let (offset, _) = state
+            let range = 0..<end.unsafeSubtracting(offset)
+            let maybePath = components[range] + ["Package.swift"]
+            let joinedPath = maybePath.joined(separator: "/")
+            if FileManager.default.fileExists(atPath: joinedPath) {
+                return components[range].joined(separator: "/")
+            }
+            return nil
+        }
+        return seq.first ?? nil ?? nil
+    }
+
+    func observeBuildLog(in packagePath: String, queue: SKQueue) {
+        let logPath = packagePath +  "/" + EditorService.LastBuildLogPath
+        if FileManager.default.fileExists(atPath: logPath) {
+            queue.addPath(logPath)
+        }
+    }
 
     func start() {
-        // Post a message for testing
-        _ = vimCommand(command: "echom 'warning: started experimental spm-vim plugin'")
-
-        // Setup observation for a path
+        // Find the SPMPackage path - search the CWD, then the file in Vim
+        // Case 1: the user has cd'd into a SPM dir.
+        // Case 2: the user is Vimming a file in some package.
+        // Case 2 breaks down when Vimming sub packages.
         let path = vimEval(eval: "expand('%:p')")
-
-        // Search the current path for a "Package.swift"
-        // assume that the build we are watching is in there.
-        let components: [String] = path.components(separatedBy: "/")
-        let packagePath = components.reduce([String]()) {
-            accum, x in
-            if accum.last == "Package.swift" {
-                return accum
-            }
-
-            if accum.count == 0 {
-                return [x]
-            }
-            let maybePath = accum + ["Package.swift"]
-            if FileManager.default.fileExists(atPath: maybePath.joined(separator: "/")) {
-                return maybePath
-            }
-            return accum + [x]
+        let firstPackagePath = findPackageRoot(near: FileManager.default.currentDirectoryPath) 
+            ?? findPackageRoot(near: path)
+        if let packagePath = firstPackagePath {
+            let queue = SKQueue(delegate: self)!
+            observeBuildLog(in: packagePath, queue: queue)
         }
-
-        var guessedLogDir = packagePath
-        guessedLogDir[packagePath.count - 1] = EditorService.LastBuildLogPath
-        let logPath = guessedLogDir.joined(separator: "/")
-
-        let queue = SKQueue(delegate: self)!
-        queue.addPath(logPath)
-        CFRunLoopRun()
+        RunLoop.current.run()
     }
 
     // Mark - SKQueueDelegate
@@ -91,10 +123,30 @@ struct EditorService: SKQueueDelegate {
     // Observe for changes in the log file
 
     func receivedNotification(_ notification: SKQueueNotification, path: String, queue: SKQueue) {
-        // This has the effect, that when builds are completed, the
-        // quickfix list gets updated
+        // This has the effect, that when the log file changes completed,
+        // errors are shown in vim. Since this code doesn't understand the
+        // notion of a `build` we just naievely update the UI
+        print("info: File \(path) had changes \(notification.toStrings().map { $0.rawValue }) ")
+        guard let file = try? String(contentsOf: URL(fileURLWithPath: path)) else {
+            return
+        }
+
+        let errs = file.components(separatedBy: "\n")
+            .map { SwiftBuildError.from(line: $0) }
+            .filter { $0 != nil }
+
+        let statePath = path.replacingOccurrences(of: EditorService.LastBuildLogPath,
+            with: EditorService.VimUIStatePath)
+        if let encodedData = try? JSONEncoder().encode(errs) {
+            do {
+                try encodedData.write(to: URL(fileURLWithPath: statePath))
+            } catch {
+                print("error: failed to write data: \(error.localizedDescription)")
+                return
+            }
+        }
+           
         _ = vimCommand(command: "call spm#showerrfile('\(path)')")
     }
 }
-
 
