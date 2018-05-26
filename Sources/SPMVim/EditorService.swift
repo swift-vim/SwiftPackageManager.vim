@@ -91,10 +91,9 @@ struct EditorService: SKQueueDelegate {
     // Observe for changes in the log file
 
     func receivedNotification(_ notification: SKQueueNotification, path: String, queue: SKQueue) {
-        let messages = "changed " + path + " at " +  notification.toStrings()
-            .map { $0.rawValue }
-            .joined(separator: ",")
-        _ = vimCommand(command: "echom '\(messages)'\n")
+        // This has the effect, that when builds are completed, the
+        // quickfix list gets updated
+        _ = vimCommand(command: "call spm#showerrfile('\(path)')")
     }
 }
 

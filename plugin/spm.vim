@@ -20,8 +20,6 @@ let s:path = fnamemodify(expand('<sfile>:p:h'), ':h')
 
 " Setup some autocmds
 autocmd BufWritePost * call s:OnBufWritePost()
-autocmd CursorMoved * call s:OnCursorMoved()
-autocmd CursorMovedI * call s:OnCursorMovedI()
 autocmd QuitPre      * call s:Pyeval("server.stop()")
 
 " Run some python
@@ -49,9 +47,6 @@ vim.command('return 1')
 EOF
 endfunction
 
-function! s:OnCursorMovedI()
-endfunction
-
 function! s:OnCursorMoved()
 endfunction
 
@@ -61,6 +56,24 @@ endfunction
 if s:SetUpPython() != 1
   echom "Setting up python failed..." . s:path
 endif
+
+" EditorService Helpers
+
+fun spm#showerrfile(file)
+    echom 'Build updated. results @ ' . a:file
+    set errorformat=
+			\%f:%l:%c:{%*[^}]}:\ error:\ %m,
+			\%f:%l:%c:{%*[^}]}:\ fatal\ error:\ %m,
+			\%f:%l:%c:{%*[^}]}:\ warning:\ %m,
+			\%f:%l:%c:\ error:\ %m,
+			\%f:%l:%c:\ fatal\ error:\ %m,
+			\%f:%l:%c:\ warning:\ %m,
+			\%f:%l:\ Error:\ %m,
+			\%f:%l:\ error:\ %m,
+			\%f:%l:\ fatal\ error:\ %m,
+			\%f:%l:\ warning:\ %m
+    execute "cgetfile " . a:file
+endf
 
 " This is basic vim plugin boilerplate
 let &cpo = s:save_cpo

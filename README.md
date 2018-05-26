@@ -71,7 +71,7 @@ This is fundamental playground support for Vim, and has the ability to:
 
 ### Build Awareness
 
-*Status: TODO*
+*Status: In Progress*
 
 It listens to events in Swift Package Manager's build system. It integrates
 into the build system running in another shell and process.
