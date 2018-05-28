@@ -1,12 +1,8 @@
-# Wrap SPM build system
-# We call the program this.
 PRODUCT=spm-vim
 LAST_LOG=.build/last_build.log
 
+# FIXME: Dynamically determine reasonable versions
 PYTHON_INCLUDE=/System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/
-
-# For now, we don't build any of the native swift stuff
-all: install
 
 .PHONY: install
 install: CONFIG=release
@@ -15,17 +11,19 @@ install: build-impl
 	@echo "Installing to /usr/local/bin/$(PRODUCT)"
 	ditto .build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
 
+all: build plugin
+
 .PHONY: build-impl
 build-impl:
 	@echo "Building.."
 	@mkdir -p .build/$(CONFIG)
 	@echo "" > $(LAST_LOG)
 	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
-	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT) || true
 
 build: CONFIG=debug
 build: SWIFT_OPTS=--product SPMVim
 build: build-impl
+	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT) || true
 
 .PHONY: test
 test: CONFIG=debug
@@ -66,6 +64,8 @@ clean:
 .build/swiftvim.so: Sources/*.c build-impl
 	clang Sources/swiftvim.c -shared -o .build/swiftvim.so  -framework Python -I $(PYTHON_INCLUDE) $(PWD)/.build/$(CONFIG)/libVimCore.dylib
 
+plugin: .build/swiftvim.so
+
 .PHONY: run_py
 run_py: .build/swiftvim.so
 	python Utils/main.py
@@ -74,10 +74,17 @@ run_py: .build/swiftvim.so
 # Unfortunately, we need to clean.
 # Use the last installed product incase we messed something up during
 # coding.
-compile_commands.json: SWIFT_OPTS=-Xswiftc -parseable-output
+compile_commands.json: SWIFT_OPTS=-Xswiftc -parseable-output \
+	-Xcc -I -Xcc $(PYTHON_INCLUDE) -Xlinker -framework -Xlinker Python
 compile_commands.json: CONFIG=debug
 compile_commands.json: clean build-impl
 	cat $(LAST_LOG) | /usr/local/bin/$(PRODUCT) compile_commands
 
+.PHONY: reset
+reset:
+	killall spm-vim
+	killall vim
 
-
+.PHONY: push_error
+push_error:
+	cat Examples/failing_build.log > .build/last_build.log

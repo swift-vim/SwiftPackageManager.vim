@@ -1,67 +1,61 @@
 import Foundation
 import VimInterface
+import EditorService
 
-// This is an example of some timer running
-// This is mainly added to experiment with pythons main thread
-// and will go away.
-// https://medium.com/@danielgalasko/a-background-repeating-timer-in-swift-412cecfd2ef9
-class RepeatingTimer {
-    let timeInterval: TimeInterval
-    init(timeInterval: TimeInterval) {
-        self.timeInterval = timeInterval
-    }
-    private lazy var timer: DispatchSourceTimer = {
-        let t = DispatchSource.makeTimerSource()
-        t.schedule(deadline:.now() + self.timeInterval,
-                   repeating: self.timeInterval)
-        t.setEventHandler(handler: { [weak self] in
-            self?.eventHandler?()
-        })
-        return t
-    }()
-    var eventHandler: (() -> Void)?
-    private enum State {
-        case suspended
-        case resumed
-    }
-    private var state: State = .suspended
-    func resume() {
-        if state == .resumed {
-            return
-        }
-        state = .resumed
-        timer.resume()
-    }
+func GetPluginDir() -> String {
+    let f = String(#file).components(separatedBy: "/")
+    return f[0..<(f.count - 3)].joined(separator: "/")
+}
 
-    func suspend() {
-        if state == .suspended {
-            return
+struct PluginState {
+    let rpc: RPCRunner
+
+    let statusTimer: VimTimer
+
+    let editorService: VimProcess
+
+    let editorSericeTask: VimTask<Void>
+
+    init() {
+        rpc = RPCRunner()
+        rpc.start()
+
+        let portValue = rpc.port.get()
+        guard case let .ok(rpcPort) = portValue else {
+            fatalError("Invalid port")
         }
-        state = .suspended
-        timer.suspend()
+
+        // FIXME: implement authorization
+        let authToken = "TOK"
+        let binPath = GetPluginDir() + "/.build/debug/spm-vim"
+
+        let args = ["editor",  authToken, "--port", String(rpcPort)]
+        let editorService = VimProcess.with(path: binPath, args: args)
+        let statusTimer = VimTimer(timeInterval: 1.0)
+
+        statusTimer.eventHandler = {
+            if editorService.process.isRunning == false {
+                print("swiftvim error: editorservice terminated")
+            }
+        }
+
+        self.statusTimer = statusTimer
+        self.editorService = editorService
+        self.editorSericeTask = VimTask {
+            editorService.process.launch()
+            RunLoop.current.run()
+        }
+        editorSericeTask.run()
+        statusTimer.resume()
     }
 }
 
-// Note: that dispatch main doesn't seem to work in the py process
-// due to lack of "parking"
-class Runner: NSObject {
-    let thread = Thread.current
-    let rl = RunLoop.current
-
-    @objc
-    func run(){
-        print("STAT", rl == RunLoop.current)
-    }
-}
-
-let runner = Runner()
-let timer = RepeatingTimer(timeInterval: 1.0)
+var state: PluginState?
 
 // Core bootstrap
 @_cdecl("plugin_init")
 public func plugin_init(){
-    timer.eventHandler = {
-        runner.perform(#selector(runner.run), with: runner.thread)
-    }
-    timer.resume()
+    swiftvim_initialize()
+    state = PluginState()
 }
+

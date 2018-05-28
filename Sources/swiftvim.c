@@ -31,9 +31,16 @@ PyMODINIT_FUNC initswiftvim(void) {
     PyModule_AddObject(m, "error", swiftvimError);
 }
 
+static int calledPluginInit = 0;
+
 static PyObject *swiftvim_load(PyObject *self, PyObject *args)
 {
-    plugin_init();
+    if (calledPluginInit == 0) {
+        plugin_init();
+        calledPluginInit = 1;
+    } else {
+        fprintf(stderr, "warning: called swiftvim.plugin_init more than once");
+    }
     return Py_BuildValue("i", 0);
 }
 

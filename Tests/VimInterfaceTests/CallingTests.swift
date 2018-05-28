@@ -4,15 +4,15 @@ import XCTest
 /// These tests make assertions about "vim.py"
 class VimInterfaceTests: XCTestCase {
     static var allTests = [
-        ("testExprString", testExprString),
-        ("testExprInt", testExprInt),
+        ("testEvalString", testEvalString),
+        ("testEvalInt", testEvalInt),
         ("testCommandNone", testCommandNone),
     ]
 
-    func testExprString() {
+    func testEvalString() {
         swiftvim_initialize()
         "VALUE".withCString { cStr in
-            let result = swiftvim_expr(
+            let result = swiftvim_eval(
               UnsafeMutablePointer(mutating: cStr))
             let str = swiftvim_asstring(result)
 
@@ -36,11 +36,11 @@ class VimInterfaceTests: XCTestCase {
     }
 
     // Low level testing
-    func testExprInt() {
+    func testEvalInt() {
         swiftvim_initialize()
-        // expr_int is a function that returns an int
+        // eval_int is a function that returns an int
         "vim".withCString { moduleCStr in
-            "expr_int".withCString { fCStr in
+            "eval_int".withCString { fCStr in
                 "1".withCString { argCStr in
                     let result = swiftvim_call(
                         UnsafeMutablePointer(mutating: moduleCStr),

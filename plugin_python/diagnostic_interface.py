@@ -29,11 +29,14 @@ class DiagnosticInterface(object):
 
     def UpdateBuildState(self, log):
         """Update Build State from a raw build log"""
-        state_dir = os.path.dirname(log)
-        path = os.path.join(state_dir, "spm_vim_ui.json")
-        with open(path, 'r') as f:
-            state = json.load(f)
-            self._UpdateDiagsFromState(state)
+        try:
+            state_dir = os.path.dirname(log)
+            path = os.path.join(state_dir, "spm_vim_ui.json")
+            with open(path, 'r') as f:
+                state = json.load(f)
+                self._UpdateDiagsFromState(state)
+        except:
+            pass
 
     def _UpdateDiagsFromState(self, state):
         diags = []

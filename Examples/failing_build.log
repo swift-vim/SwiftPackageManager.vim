@@ -1,0 +1,17 @@
+Building..
+Linking ./.build/x86_64-apple-macosx10.10/debug/SPMVim
+$ make plugin
+Building..
+Compile Swift Module 'SKQueue' (1 sources)
+Compile Swift Module 'LogParser' (1 sources)
+Compile Swift Module 'SwiftCompilationDatabase' (1 sources)
+Compile Swift Module 'EditorService' (1 sources)
+Compile Swift Module 'VimCore' (4 sources)
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/VimCore/PluginMain.swift:10:1: error: expressions are not allowed at the top level
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/VimCore/PluginMain.swift:10:1: error: use of unresolved identifier 'a'
+a
+^
+error: terminated(1): /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-build-tool -f /Users/jerrymarino/Projects/SwiftPackageManager.vim/.build/debug.yaml VimCore.dylib
+mv: .build/debug/SPMVim: No such file or directory

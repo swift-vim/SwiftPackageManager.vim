@@ -2,19 +2,19 @@
 #include <unistd.h>
 
 // module=vim, method=command|exec, str = value
-void *swiftvim_call(const char *module, const char *method, const char *str) {
+void *swiftvim_call(const char *module, const char *method, const char *textArg) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+
     PyObject *pName, *pModule, *pDict, *pFunc;
     PyObject *pArgs, *pValue;
 
+    // FIXME: we shouldn't need to always import
     pName = PyString_FromString(module);
-    /* Error checking of pName left out */
-
     pModule = PyImport_Import(pName);
     Py_DECREF(pName);
-
     if (pModule == NULL) {
         PyErr_Print();
-        fprintf(stderr, "Failed to load \"%s\"\n", module);
+        fprintf(stderr, "swiftvim error: failed to load \"%s\"\n", module);
         return NULL;
     }
 
@@ -23,36 +23,33 @@ void *swiftvim_call(const char *module, const char *method, const char *str) {
     // pFunc is a new reference 
     if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(1);
-        pValue = PyString_FromString(str);
+        pValue = PyString_FromString(textArg);
         if (!pValue) {
             Py_DECREF(pArgs);
             Py_DECREF(pModule);
-            fprintf(stderr, "Cannot convert argument\n");
+            fprintf(stderr, "swiftvim error: Cannot convert argument\n");
             return NULL;
         }
-
         int argOffset = 0;
         PyTuple_SetItem(pArgs, argOffset, pValue);
         pValue = PyObject_CallObject(pFunc, pArgs);
         Py_DECREF(pArgs);
         if (pValue != NULL) {
-
-#ifdef SPMVIM_PY_DEBUG
-            printf("Result of call: %ld\n", PyInt_AsLong(pValue));
-#endif
             outValue = pValue;
         } else {
             Py_DECREF(pFunc);
             Py_DECREF(pModule);
             PyErr_Print();
-            fprintf(stderr,"Call failed\n");
+            fprintf(stderr,"swiftvim error: call failed\n");
             return outValue;
         }
     } else {
         if (PyErr_Occurred())
             PyErr_Print();
-        fprintf(stderr, "Cannot find function \"%s\"\n", method);
+        fprintf(stderr, "swiftvim error: cannot find function \"%s\"\n", method);
     }
+
+    PyGILState_Release(gstate);
     Py_XDECREF(pFunc);
     Py_DECREF(pModule);
     return outValue;
@@ -62,10 +59,11 @@ void *swiftvim_command(const char *command) {
     return swiftvim_call("vim", "command", command);
 }
 
-void *swiftvim_expr(const char *command) {
-    return swiftvim_call("vim", "expr", command);
+void *swiftvim_eval(const char *eval) {
+    return swiftvim_call("vim", "eval", eval);
 }
 
+// TODO: Do these need GIL locks?
 void *swiftvim_decref(void *value) {
     Py_DECREF(value);
     return value;
@@ -80,18 +78,29 @@ const char *swiftvim_asstring(void *value) {
     if (value == NULL) {
         return "";
     }
-    return PyString_AsString(value);
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    const char *v = PyString_AsString(value);
+    PyGILState_Release(gstate);
+	return v;
 }
 
 int swiftvim_asint(void *value) {
-    return PyInt_AsLong(value);
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    int v = PyInt_AsLong(value);
+    PyGILState_Release(gstate);
+	return v;
 }
 
 void swiftvim_initialize() {
     Py_Initialize();
+    if(!PyEval_ThreadsInitialized()) {
+        PyEval_InitThreads();
+    }
+    PyObject *pName, *pModule;
+
+#ifdef SPMVIM_LOADSTUB_RUNTIME
     // For unit tests, we fake out the vim module
     // to make the tests as pure as possible.
-#ifdef SPMVIM_LOADSTUB_RUNTIME
     // Assume that tests are running from the source root
     // We could do something better.
     char cwd[1024];

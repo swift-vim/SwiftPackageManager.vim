@@ -4,6 +4,7 @@ import XCTest
 class SPMVimTests: XCTestCase {
     static var allTests = [
         ("testErrorExtraction", testErrorExtraction),
+        ("testProcess", testProcess),
     ]
 
     // FIXME: Move editor service into a testable lib
@@ -18,5 +19,13 @@ class SPMVimTests: XCTestCase {
         XCTAssertEqual(err.col, 1)
         XCTAssertEqual(err.ty, " error")
         XCTAssertEqual(err.message, " error: use of unresolved identifier 'a'nan^n")
+    }
+
+    func testProcess() {
+        let process = VimProcess.with(path: "/bin/bash",
+                   args: ["-c", "/bin/ls 2>&1 | cat > /tmp/x"])
+        process.process.launch()
+        process.process.waitUntilExit()
+        XCTAssertEqual(process.process.terminationStatus, 0)
     }
 }

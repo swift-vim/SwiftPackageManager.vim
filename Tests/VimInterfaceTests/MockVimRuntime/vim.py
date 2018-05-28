@@ -1,12 +1,12 @@
 def command(value):
     return None
 
-def expr(value):
+def eval(value):
     return value
 
-def expr_int(value):
+def eval_int(value):
     return int(value)
 
-def expr_bool(value):
+def eval_bool(value):
     return True
 

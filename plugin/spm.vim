@@ -1,4 +1,4 @@
-" Basic example of using Python with vim 
+" Use Swift with Vim thanks to Swift
 
 " This is basic vim plugin boilerplate
 let s:save_cpo = &cpo
@@ -20,7 +20,10 @@ let s:path = fnamemodify(expand('<sfile>:p:h'), ':h')
 
 " Setup some autocmds
 autocmd BufWritePost * call s:OnBufWritePost()
-autocmd QuitPre      * call s:Pyeval("server.Stop()")
+
+" FIXME: add this to swift
+" autocmd QuitPre      * call s:Pyeval("server.Stop()")
+
 autocmd CursorMoved      * call s:Pyeval("diag_ui.OnCursorMoved()")
 
 " Run some python
@@ -39,12 +42,15 @@ import sys
 
 # Directory of the plugin
 plugin_dir  = vim.eval('s:path')
-sys.path.insert(0, os.path.join(plugin_dir, 'plugin_python'))
 
-from server import Server
+# Bootstrap Swift Plugin
+sys.path.insert(0, os.path.join(plugin_dir, '.build'))
+import swiftvim
+swiftvim.load()
+
+# Setup Legacy diag ui
+sys.path.insert(0, os.path.join(plugin_dir, 'plugin_python'))
 from diagnostic_interface import DiagnosticInterface
-server = Server()
-server.Start()
 diag_ui = DiagnosticInterface()
 vim.command('return 1')
 EOF

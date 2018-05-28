@@ -35,6 +35,7 @@ public struct EditorService: SKQueueDelegate {
     /// The editor listens to updates in this log
     static let LastBuildLogPath = ".build/last_build.log"
     static let VimUIStatePath = ".build/spm_vim_ui.json"
+    static let VimQueue = DispatchQueue.init(label: "com.spmvim.es")
 
     public init(host: String, authToken: String) {
         self.host = host
@@ -43,24 +44,32 @@ public struct EditorService: SKQueueDelegate {
 
     /// vim.command
     func vimCommand(command: String) -> String {
-        return post(str: command, method: "c")
+        var result: String!
+        EditorService.VimQueue.sync {
+            result = post(str: command, method: "c")
+        }
+        return result
     }
 
     /// vim.eval
     func vimEval(eval: String) -> String {
-        return post(str: eval, method: "e")
+        var result: String!
+        EditorService.VimQueue.sync {
+            result = post(str: eval, method: "e")
+        }
+        return result
     }
 
     /// Send a POST request and return the body.
     func post(str: String, method: String) -> String {
         let commandPath = host + "/" + method
-        let commandData = str.data(using:.ascii)!
+        let commandData = str.data(using:.utf8) ?? Data()
         var request = URLRequest(url: URL(string: commandPath)!)
         request.httpBody = commandData
         request.httpMethod = "POST"
         let semaphore = DispatchSemaphore(value: 0)
         let session = URLSession.shared
-        var responseStr: String!
+        var responseStr: String?
         let task = session.dataTask(with: request) {
             (data, response, error) in
             if let error = error {
@@ -68,14 +77,14 @@ public struct EditorService: SKQueueDelegate {
                 responseStr = ""
             } else {
                 let decodeData = data ?? Data()
-                responseStr = String(data: decodeData, encoding: .ascii) ?? ""
+                responseStr = String(data: decodeData, encoding: .utf8) ?? ""
                 semaphore.signal()
             }
         }
 
         task.resume()
         _ = semaphore.wait(timeout: .distantFuture)
-        return responseStr
+        return responseStr ?? ""
     }
 
     func findPackageRoot(near path: String) -> String? {
@@ -88,15 +97,15 @@ public struct EditorService: SKQueueDelegate {
             .lazy
             .enumerated()
             .map {
-            state -> String? in
-            let (offset, _) = state
-            let range = 0..<end.unsafeSubtracting(offset)
-            let maybePath = components[range] + ["Package.swift"]
-            let joinedPath = maybePath.joined(separator: "/")
-            if FileManager.default.fileExists(atPath: joinedPath) {
-                return components[range].joined(separator: "/")
-            }
-            return nil
+                state -> String? in
+                let (offset, _) = state
+                let range = 0..<end.unsafeSubtracting(offset)
+                let maybePath = components[range] + ["Package.swift"]
+                let joinedPath = maybePath.joined(separator: "/")
+                if FileManager.default.fileExists(atPath: joinedPath) {
+                    return components[range].joined(separator: "/")
+                }
+                return nil
         }
         return seq.first ?? nil ?? nil
     }
@@ -141,16 +150,15 @@ public struct EditorService: SKQueueDelegate {
             .filter { $0 != nil }
 
         let statePath = path.replacingOccurrences(of: EditorService.LastBuildLogPath,
-            with: EditorService.VimUIStatePath)
-        if let encodedData = try? JSONEncoder().encode(errs) {
+                                                  with: EditorService.VimUIStatePath)
+        if let encodedData: Data = try? JSONEncoder().encode(errs) {
             do {
-                try encodedData.write(to: URL(fileURLWithPath: statePath))
+                try encodedData.write(to: URL(fileURLWithPath: statePath), options: [.atomic])
             } catch {
                 print("error: failed to write data: \(error.localizedDescription)")
                 return
             }
         }
-           
         _ = vimCommand(command: "call spm#showerrfile('\(path)')")
     }
 }
