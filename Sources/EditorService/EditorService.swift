@@ -1,14 +1,14 @@
 import Foundation
 import SKQueue
 
-struct SwiftBuildError: Codable {
-    let file: String
-    let line: Int
-    let col: Int
-    let ty: String
-    let message: String
+public struct SwiftBuildError: Codable {
+    public let file: String
+    public let line: Int
+    public let col: Int
+    public let ty: String
+    public let message: String
 
-    static func from(line: String) -> SwiftBuildError? {
+    public static func from(line: String) -> SwiftBuildError? {
         let components = line.components(separatedBy: ":")
         guard components.count > 4 else {
             return nil
@@ -28,13 +28,18 @@ struct SwiftBuildError: Codable {
 /// Vim Integration
 /// It communicates with Vim via evaling expressions and running commands
 /// through the Python Vim API
-struct EditorService: SKQueueDelegate {
+public struct EditorService: SKQueueDelegate {
     let host: String
     let authToken: String
 
     /// The editor listens to updates in this log
     static let LastBuildLogPath = ".build/last_build.log"
     static let VimUIStatePath = ".build/spm_vim_ui.json"
+
+    public init(host: String, authToken: String) {
+        self.host = host
+        self.authToken = authToken
+    }
 
     /// vim.command
     func vimCommand(command: String) -> String {
@@ -103,7 +108,7 @@ struct EditorService: SKQueueDelegate {
         }
     }
 
-    func start() {
+    public func start() {
         // Find the SPMPackage path - search the CWD, then the file in Vim
         // Case 1: the user has cd'd into a SPM dir.
         // Case 2: the user is Vimming a file in some package.
@@ -122,7 +127,7 @@ struct EditorService: SKQueueDelegate {
 
     // Observe for changes in the log file
 
-    func receivedNotification(_ notification: SKQueueNotification, path: String, queue: SKQueue) {
+    public func receivedNotification(_ notification: SKQueueNotification, path: String, queue: SKQueue) {
         // This has the effect, that when the log file changes completed,
         // errors are shown in vim. Since this code doesn't understand the
         // notion of a `build` we just naievely update the UI
