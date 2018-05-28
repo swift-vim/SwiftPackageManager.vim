@@ -1,5 +1,5 @@
 import XCTest
-@testable import SPMVim
+@testable import EditorService
 
 class SPMVimTests: XCTestCase {
     static var allTests = [

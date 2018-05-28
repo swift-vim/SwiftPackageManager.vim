@@ -2,6 +2,7 @@ import Commandant
 import Result
 import LogParser
 import Foundation
+import EditorService
 
 func getPath(path: String?, relativeTo: String) -> String? {
     if let path = path,
