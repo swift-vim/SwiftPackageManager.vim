@@ -19,6 +19,34 @@ static PyMethodDef swiftvimMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+
+
+#if PY_MAJOR_VERSION == 3
+
+static struct PyModuleDef swiftvimmodule = {
+    PyModuleDef_HEAD_INIT,
+    "swiftvim", /* name of module */
+    NULL, /* module documentation, may be NULL */
+    -1, /* size of per-interpreter state of the module,
+        or -1 if the module keeps state in global variables. */
+    swiftvimMethods
+};
+
+PyMODINIT_FUNC PyInit_swiftvim(void) {
+    PyObject *m;
+
+    m = PyModule_Create(&swiftvimmodule);
+    if (m == NULL)
+        return NULL;
+
+    swiftvimError = PyErr_NewException("swiftvim.error", NULL, NULL);
+    Py_INCREF(swiftvimError);
+    PyModule_AddObject(m, "error", swiftvimError);
+    return m;
+}
+
+#else 
+
 PyMODINIT_FUNC initswiftvim(void) {
     PyObject *m;
 
@@ -30,6 +58,8 @@ PyMODINIT_FUNC initswiftvim(void) {
     Py_INCREF(swiftvimError);
     PyModule_AddObject(m, "error", swiftvimError);
 }
+#endif
+
 
 static int calledPluginInit = 0;
 
