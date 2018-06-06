@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "SwiftServerHttp",
+        "repositoryURL": "https://github.com/swift-vim/http",
+        "state": {
+          "branch": null,
+          "revision": "671be3123752a8eebd18dccb9321e1dfcae8f9c0",
+          "version": null
+        }
+      },
+      {
         "package": "Nimble",
         "repositoryURL": "https://github.com/Quick/Nimble.git",
         "state": {
@@ -52,15 +61,6 @@
         "state": {
           "branch": "master",
           "revision": "810f040e97ebe97210d64a644d8d386e35a6358d",
-          "version": null
-        }
-      },
-      {
-        "package": "SwiftServerHttp",
-        "repositoryURL": "https://github.com/swift-vim/http",
-        "state": {
-          "branch": null,
-          "revision": "671be3123752a8eebd18dccb9321e1dfcae8f9c0",
           "version": null
         }
       }

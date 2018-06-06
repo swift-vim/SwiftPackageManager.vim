@@ -1,6 +1,26 @@
 #include <Python.h>
 #include <unistd.h>
 
+/// Bridge PyString_AsString to both runtimes
+static const char *SPyString_AsString(PyObject *input) {
+#if PY_MAJOR_VERSION == 3
+    // FIXME: Do we need to do this:
+    // https://stackoverflow.com/questions/6783493/python-unicode-object-and-c-api-retrieving-char-from-pyunicode-objects
+    return (const char *)PyUnicode_AsUnicode(input);
+#else
+    return PyString_AsString(input);
+#endif
+}
+
+/// Bridge PyString_FromString to both runtimes
+static PyObject *SPyString_FromString(const char *input) {
+#if PY_MAJOR_VERSION == 3
+    return PyUnicode_FromString(input);
+#else
+    return PyString_FromString(input);
+#endif
+}
+
 // module=vim, method=command|exec, str = value
 void *swiftvim_call(const char *module, const char *method, const char *textArg) {
     PyGILState_STATE gstate = PyGILState_Ensure();
@@ -9,7 +29,7 @@ void *swiftvim_call(const char *module, const char *method, const char *textArg)
     PyObject *pArgs, *pValue;
 
     // FIXME: we shouldn't need to always import
-    pName = PyString_FromString(module);
+    pName = SPyString_FromString(module);
     pModule = PyImport_Import(pName);
     Py_DECREF(pName);
     if (pModule == NULL) {
@@ -23,7 +43,7 @@ void *swiftvim_call(const char *module, const char *method, const char *textArg)
     // pFunc is a new reference 
     if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(1);
-        pValue = PyString_FromString(textArg);
+        pValue = SPyString_FromString(textArg);
         if (!pValue) {
             Py_DECREF(pArgs);
             Py_DECREF(pModule);
@@ -79,16 +99,16 @@ const char *swiftvim_asstring(void *value) {
         return "";
     }
     PyGILState_STATE gstate = PyGILState_Ensure();
-    const char *v = PyString_AsString(value);
+    const char *v = SPyString_AsString(value);
     PyGILState_Release(gstate);
-	return v;
+    return v;
 }
 
 int swiftvim_asint(void *value) {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    int v = PyInt_AsLong(value);
+    int v = PyLong_AsLong(value);
     PyGILState_Release(gstate);
-	return v;
+    return v;
 }
 
 void swiftvim_initialize() {
