@@ -4,6 +4,15 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+let g:icm_error_symbol =
+      \ get( g:, 'icm_error_symbol',
+      \ get( g:, 'syntastic_error_symbol', '>>' ) )
+
+let g:icm_warning_symbol =
+      \ get( g:, 'icm_warning_symbol',
+      \ get( g:, 'syntastic_warning_symbol', '>>' ) )
+
+
 function! s:UsingPython3()
   if has('python3')
     return 1
