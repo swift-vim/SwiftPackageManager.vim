@@ -42,8 +42,7 @@ build-impl: py_vars
 build-impl:
 	@echo "Building.."
 	@mkdir -p .build/$(CONFIG)
-	@echo "" > $(LAST_LOG)
-	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
+	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee $(LAST_LOG)
 
 # Build and install the command line program
 .PHONY: install_cli
