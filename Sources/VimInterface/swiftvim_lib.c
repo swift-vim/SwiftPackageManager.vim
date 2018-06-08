@@ -4,7 +4,7 @@
 /// Bridge PyString_AsString to both runtimes
 static const char *SPyString_AsString(PyObject *input) {
 #if PY_MAJOR_VERSION == 3
-    // FIXME: Do we need to do this:
+    // FIXME:
     // https://stackoverflow.com/questions/6783493/python-unicode-object-and-c-api-retrieving-char-from-pyunicode-objects
     return (const char *)PyUnicode_AsUnicode(input);
 #else
@@ -25,12 +25,9 @@ static PyObject *SPyString_FromString(const char *input) {
 void *swiftvim_call(const char *module, const char *method, const char *textArg) {
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    PyObject *pName, *pModule, *pDict, *pFunc;
-    PyObject *pArgs, *pValue;
-
     // FIXME: we shouldn't need to always import
-    pName = SPyString_FromString(module);
-    pModule = PyImport_Import(pName);
+    PyObject *pName = SPyString_FromString(module);
+    PyObject *pModule = PyImport_Import(pName);
     Py_DECREF(pName);
     if (pModule == NULL) {
         PyErr_Print();
@@ -39,11 +36,11 @@ void *swiftvim_call(const char *module, const char *method, const char *textArg)
     }
 
     void *outValue = NULL;
-    pFunc = PyObject_GetAttrString(pModule, method);
+    PyObject *pFunc = PyObject_GetAttrString(pModule, method);
     // pFunc is a new reference 
     if (pFunc && PyCallable_Check(pFunc)) {
-        pArgs = PyTuple_New(1);
-        pValue = SPyString_FromString(textArg);
+        PyObject *pArgs = PyTuple_New(1);
+        PyObject *pValue = SPyString_FromString(textArg);
         if (!pValue) {
             Py_DECREF(pArgs);
             Py_DECREF(pModule);
@@ -116,7 +113,6 @@ void swiftvim_initialize() {
     if(!PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
     }
-    PyObject *pName, *pModule;
 
 #ifdef SPMVIM_LOADSTUB_RUNTIME
     // For unit tests, we fake out the vim module
@@ -129,7 +125,7 @@ void swiftvim_initialize() {
     strcat(cwd, "/Tests/VimInterfaceTests/MockVimRuntime/");
     fprintf(stderr, "Adding test import path: %s \n", cwd);
     PyObject* sysPath = PySys_GetObject((char*)"path");
-    PyObject* programName = PyString_FromString(cwd);
+    PyObject* programName = SPyString_FromString(cwd);
     PyList_Append(sysPath, programName);
     Py_DECREF(programName);
 #endif

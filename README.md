@@ -2,101 +2,55 @@
 
 SwiftPackageManager.vim makes using Swift with Vim awesome.
 
-It's a command line tool and Vim plugin that's easy to use.
+![BuildAwareness](https://user-images.githubusercontent.com/1245820/41139267-6e3b29ec-6a9b-11e8-8ec2-f61dfdc64c33.png)
 
-*Status: In progress see [Feature Roadmap](#feature-roadmap)*
+*Status: In progress see [TODO](https://github.com/swift-vim/SwiftPackageManager.vim/blob/master/ROADMAP.md)*
 
-## Background
+## Installing
 
-### Problem
+First, install with your favorite plugin manager.
 
-In 2018, it's difficult to use Vim for Swift development. There are too many
-plugins and build systems to create a reasonable experience solving for every
-possible tooling combination.
+Build:
+```
+cd .vim/bundle
+git clone https://github.com/swift-vim/SwiftPackageManager.vim.git
 
-In many scenarios, it isn't possible to implement features without making some
-assumptions. The result is abstract tools that are hard to implement and use.
+cd SwiftPackageManager.vim
+make
+```
 
-Additionally, it is difficult and time consuming to maintain everything as
-Xcode, Swift, Bazel, CocoaPods, Carthage, Vim and other tools in this ecosystem
-evolve.
+Then, add `spm-vim` to your path:
+```
+ln -s $PWD/.build/debug/spm-vim /usr/local/bin/spm-vim
+```
 
-### Solution
+## Features
 
-Create a unified system under the assumption that [Swift Package
-Manager](https://github.com/apple/swift-package-manager) will be used as the
-package manager and build system. 
+### View Swift Build Results in Vim
 
-It achieves this by utilizing and enhancing existing open source plugins. It
-fills existing gaps by making the assumption on SPM when needed and supports
-SPM as a first class citizen.
+It listens for build updates and shows results.
 
-*SPM is a reasonable common denominator, as it has gained momentum in the
-community and is a first class citizen in swift.*
+```
+# Pipe swift output to .build/last_build.log
+swift build | tee .build/last_build.log
+```
 
-### github.com/swift-vim
+### Setup Code Completion and Diagnostics
 
-[swift-vim](https://github.com/swift-vim/SwiftPackageManager.vim) is the central organization where projects live. Development happens in the open.
+It generates [compile_commands.json](https://github.com/jerrymarino/SwiftCompilationDatabase).
 
-## Non Goals
+```
+# Pipe *parseable* swift output to spm-vim
+swift build -parseable-output  | spm-vim compile_commands
+```
 
-It doesn't reimplement language level features, like [syntax highlighting](https://github.com/keith/swift.vim), or [playgrounds](https://github.com/jerrymarino/SwiftPlayground.vim).
+_Required by code completion and diagnostics engine, [iCompleteMe](https://github.com/jerrymarino/iCompleteMe)._
 
-Xcode support. It is already possible to set this up with existing tools.
+## Roadmap
 
-## Feature Roadmap
+SwiftPackageManager.vim improves and unifies many features into an easy to use plugin.
 
-### Code Completion and Diagnostics
-
-*Status: Working / In Progress*
-
-Support for Code Completion in Swift Package Manager projects.
-
-- [x] Invoke completions and display real time diagnostics via [iCompleteMe](https://github.com/jerrymarino/iCompleteMe).
-- [x] Generate `compile_commands.json` for Swift Package Manager projects via [SwiftCompilationDatabase](https://github.com/jerrymarino/SwiftCompilationDatabase)
-- [ ] Documentation and SPM.vim integration
-
-### Playground
-
-*Status: In Progress*
-
-Create and experiment with playgrounds with Swift Package Manager projects.
-
-This is fundamental playground support for Vim, and has the ability to:
-
-- [x] Display playground output in Vim via [SwiftPlayground.vim](https://github.com/jerrymarino/SwiftPlayground.vim)
-- [ ] Generate Playgrounds
-- [ ] Easily access SPM dependencies in playgrounds
-- [ ] Documentation and SPM.vim integration
-
-### Build Awareness
-
-*Status: In Progress*
-
-It listens to events in Swift Package Manager's build system. It integrates
-into the build system running in another shell and process.
-
-- [ ] See build errors and warnings in Vim
-- [ ] Documentation and SPM.vim integration
-
-### Debug
-
-*Status: TODO*
-
-A lightweight "plugin" for [swift-lldb](https://github.com/apple/swift-lldb).
-Support should be non blocking, fast, and rely heavily on the LLDB shell
-running in another process for most interaction.
-
-Features:
-- [ ] Add and remove breakpoints from Vim
-- [ ] When lldb jumps to lines and files, Vim opens and highlights that line
-- [ ] Documentation and SPM.vim integration
-
-### Test Support
-
-*Status: TODO*
-
-Run tests and see failing output in Vim.
+Checkout the [roadmap](https://github.com/swift-vim/SwiftPackageManager.vim/blob/master/ROADMAP.md) for more!
 
 ## Contributing
 

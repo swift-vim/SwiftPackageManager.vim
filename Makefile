@@ -2,6 +2,7 @@ SHELL=bash
 
 PRODUCT=spm-vim
 LAST_LOG=.build/last_build.log
+PWD=$(shell pwd)
 
 default: debug
 
@@ -49,20 +50,22 @@ build-impl:
 install_cli: CONFIG=release
 install_cli: cli
 	@echo "Installing to /usr/local/bin/$(PRODUCT)"
-	ditto .build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
+	ln -s $(PWD)/.build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
 
 
 .PHONY: test
-test: CONFIG=debug
-test: SWIFT_OPTS= \
-	-DSPMVIM_LOADSTUB_RUNTIME \
+test_b: SWIFT_OPTS= \
+	-Xcc -DSPMVIM_LOADSTUB_RUNTIME \
 	-Xcc -I$(PYTHON_INCLUDE) \
-	-Xlinker $(PYTHON_LINKED_LIB)  
-test:
+	-Xlinker $(PYTHON_LINKED_LIB) \
+	--build-tests
+test_b: build-impl
+test: CONFIG=debug
+test: py_vars test_b
 	@echo "Testing.."
 	@mkdir -p .build/$(CONFIG)
 	@echo "" > $(LAST_LOG)
-	@swift test -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
+	@swift test --skip-build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
 
 # Running: Pipe the parseable output example to the program
 .PHONY: run
