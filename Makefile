@@ -3,9 +3,22 @@ SHELL=bash
 PRODUCT=spm-vim
 LAST_LOG=.build/last_build.log
 
-default: install
+default: debug
 
-all: build plugin
+all: CONFIG=debug
+
+# FIXME: the .dylib is not being built in release..
+.PHONY: release
+release: CONFIG=release
+release: cli .build/swiftvim.so
+
+.PHONY: debug
+debug: CONFIG=debug
+debug: cli .build/swiftvim.so
+
+.PHONY: plugin
+plugin: CONFIG=debug
+plugin: .build/swiftvim.so
 
 # Dynamically find python vars
 # Note, that this is OSX specific
@@ -17,14 +30,12 @@ py_vars:
 	$(eval PYTHON_LINKED_LIB=$(shell source Utils/make_lib.sh; linked_python))
 	$(eval PYTHON_INCLUDE=$(shell source Utils/make_lib.sh; python_inc_dir))
 
-# Install the command line program
-.PHONY: install
-install: CONFIG=release
-install: SWIFT_OPTS=--product SPMVim
-install: build-impl
-	@echo "Installing to /usr/local/bin/$(PRODUCT)"
-	ditto .build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
+.PHONY: cli
+cli: SWIFT_OPTS=--product SPMVim
+cli: build-impl
+	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT) || true
 
+# SPM Build
 .PHONY: build-impl
 # Careful: assume we need to depend on this here
 build-impl: py_vars
@@ -34,10 +45,13 @@ build-impl:
 	@echo "" > $(LAST_LOG)
 	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
 
-build: CONFIG=debug
-build: SWIFT_OPTS=--product SPMVim
-build: build-impl
-	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT) || true
+# Build and install the command line program
+.PHONY: install_cli
+install_cli: CONFIG=release
+install_cli: cli
+	@echo "Installing to /usr/local/bin/$(PRODUCT)"
+	ditto .build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
+
 
 .PHONY: test
 test: CONFIG=debug
@@ -50,11 +64,6 @@ test:
 	@mkdir -p .build/$(CONFIG)
 	@echo "" > $(LAST_LOG)
 	@swift test -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
-
-.PHONY: release
-release: CONFIG=release
-release: SWIFT_OPTS=--product SPMVim
-release: build-impl
 
 # Running: Pipe the parseable output example to the program
 .PHONY: run
@@ -73,19 +82,19 @@ clean:
 	rm -rf .build/release/*
 
 # This is the core python module
-.build/swiftvim.so:
-.build/swiftvim.so: SWIFT_OPTS=--product VimCore \
+.PHONY: vimcore
+vimcore:
+vimcore: SWIFT_OPTS=--product VimCore \
 	-Xcc -I$(PYTHON_INCLUDE) \
-	-Xlinker $(PYTHON_LINKED_LIB)  
-.build/swiftvim.so: CONFIG=debug
+	-Xlinker $(PYTHON_LINKED_LIB)
+vimcore:  build-impl
+
 # FIXME: Consider moving this into SPM
-.build/swiftvim.so: Sources/*.c build-impl
-	clang Sources/swiftvim.c -shared -o .build/swiftvim.so \
+.build/swiftvim.so: Sources/*.c vimcore
+	@clang Sources/swiftvim.c -shared -o .build/swiftvim.so \
 		$(PYTHON_LINKED_LIB) \
 		-I$(PYTHON_INCLUDE) \
 		$(PWD)/.build/$(CONFIG)/libVimCore.dylib
-
-plugin: .build/swiftvim.so
 
 .PHONY: run_py
 run_py: .build/swiftvim.so
