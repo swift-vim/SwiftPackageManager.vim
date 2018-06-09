@@ -4,8 +4,6 @@
 /// Bridge PyString_AsString to both runtimes
 static const char *SPyString_AsString(PyObject *input) {
 #if PY_MAJOR_VERSION == 3
-    // FIXME:
-    // https://stackoverflow.com/questions/6783493/python-unicode-object-and-c-api-retrieving-char-from-pyunicode-objects
     return (const char *)PyUnicode_AsUTF8String(input);
 #else
     return PyString_AsString(input);
@@ -104,6 +102,86 @@ const char *swiftvim_asstring(void *value) {
 int swiftvim_asint(void *value) {
     PyGILState_STATE gstate = PyGILState_Ensure();
     int v = PyLong_AsLong(value);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+int swiftvim_list_size(void *list) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    int v = PyList_Size(list);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void swiftvim_list_set(void *list, size_t i, void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    PyList_SetItem(list, i, value);
+    PyGILState_Release(gstate);
+}
+
+void *swiftvim_list_get(void *list, size_t i) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    /// Return a borrowed reference
+    void *v = PyList_GET_ITEM(list, i);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void swiftvim_list_append(void *list, void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    PyList_Append(list, value);
+    PyGILState_Release(gstate);
+}
+
+// MARK - Dict
+
+int swiftvim_dict_size(void *dict) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    int v = PyDict_Size(dict);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void *swiftvim_dict_keys(void *dict) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    // Return value: New reference
+    void *v = PyDict_Keys(dict);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void *swiftvim_dict_values(void *dict) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    // Return value: New reference
+    void *v = PyDict_Items(dict);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void swiftvim_dict_set(void *dict, void *key, void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    PyDict_SetItem(dict, key, value);
+    PyGILState_Release(gstate);
+}
+
+void *swiftvim_dict_get(void *dict, void *key) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    /// Return a borrowed reference
+    void *v = PyDict_GetItem(dict, key);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void swiftvim_dict_setstr(void *dict, const char *key, void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    PyDict_SetItemString(dict, key, value);
+    PyGILState_Release(gstate);
+}
+
+void *swiftvim_dict_getstr(void *dict, const char *key) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    /// Return a borrowed reference
+    void *v = PyDict_GetItemString(dict, key);
     PyGILState_Release(gstate);
     return v;
 }
