@@ -6,7 +6,7 @@ static const char *SPyString_AsString(PyObject *input) {
 #if PY_MAJOR_VERSION == 3
     // FIXME:
     // https://stackoverflow.com/questions/6783493/python-unicode-object-and-c-api-retrieving-char-from-pyunicode-objects
-    return (const char *)PyUnicode_AsUnicode(input);
+    return (const char *)PyUnicode_AsUTF8String(input);
 #else
     return PyString_AsString(input);
 #endif

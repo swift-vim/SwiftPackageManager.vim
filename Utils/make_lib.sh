@@ -11,25 +11,38 @@ function realpath() {
     echo $(python -c "import os; print os.path.realpath('$1')")
 }
 
-VIM_PATH=""
-WHICH_VIM=$(realpath $(which vim))
+function find_py_from_vim() {
+    VIM_PATH=""
+    WHICH_VIM=$(realpath $(which vim))
 
-if [[ $(echo $(file $WHICH_VIM) | grep -q shell; echo $?) -eq 0 ]]; then
-    # Assumptions about vim inside of MacVim.app which is a script
-    if [[ $(cat $WHICH_VIM | grep -q MacVim; echo $?) -eq 0 ]]; then
-        VIM_PATH=$(dirname $(dirname $WHICH_VIM))/MacOS/Vim
+    if [[ $(echo $(file $WHICH_VIM) | grep -q shell; echo $?) -eq 0 ]]; then
+        # Assumptions about vim inside of MacVim.app which is a script
+        if [[ $(cat $WHICH_VIM | grep -q MacVim; echo $?) -eq 0 ]]; then
+            VIM_PATH=$(dirname $(dirname $WHICH_VIM))/MacOS/Vim
+        fi
+    else
+        VIM_PATH=$WHICH_VIM
     fi
+
+    if [[ $(test -x "$VIM_PATH") -ne 0 ]]; then
+        >&2 echo "error: can't find vim"
+        exit 1
+    fi
+
+    _PYTHON_LINKED=$(otool -l $VIM_PATH  | grep Python | awk '{ print $2 }')
+    PYTHON_F=$(realpath $_PYTHON_LINKED)
+}
+
+# If the user specifies, we'll use a python.
+# This must point to the actual version:
+# /System/Library/Frameworks/Python.framework/Python
+# and is mainly for testing only.
+if [[ "$USE_PYTHON" ]]; then
+    >&2 echo "using specified python $USE_PYTHON"
+    PYTHON_F=$(realpath "$USE_PYTHON")
 else
-    VIM_PATH=$WHICH_VIM
+    find_py_from_vim
 fi
-
-if [[ $(test -x "$VIM_PATH") -ne 0 ]]; then
-    >&2 echo "error: can't find vim"
-    exit 1
-fi
-
-_PYTHON_LINKED=$(otool -l $VIM_PATH  | grep Python | awk '{ print $2 }')
-PYTHON_F=$(realpath $_PYTHON_LINKED)
 
 # Test if we've got a dylib on our hands.
 if [[ $(echo $(file "$PYTHON_F") | grep -q dynamic; echo $?) -ne 0 ]]; then
