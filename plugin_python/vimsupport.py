@@ -25,6 +25,7 @@ def SetLocationList(diagnostics):
 
 
 def BufferModified(buffer_object):
+    # FIXME: GetBufferOption
     return bool(int(GetBufferOption(buffer_object, 'mod')))
 
 

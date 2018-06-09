@@ -47,5 +47,8 @@ let package = Package(
         .testTarget(
             name: "VimInterfaceTests",
             dependencies: ["VimInterface"]),
+        .testTarget(
+            name: "VimCoreTests",
+            dependencies: ["VimCore"]),
     ]
 )
