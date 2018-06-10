@@ -53,6 +53,8 @@ install_cli: cli
 	ln -s $(PWD)/.build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
 
 
+# Running tests with custom versions of Python
+# USE_PYTHON=/usr/local/Cellar/python/3.6.4_4/Frameworks/Python.framework/Versions/3.6/Python make test 
 .PHONY: test
 test_b: SWIFT_OPTS= \
 	-Xcc -DSPMVIM_LOADSTUB_RUNTIME \

@@ -31,9 +31,19 @@ void *_Nonnull swiftvim_dict_values(void *_Nonnull dict);
 void *_Nonnull swiftvim_dict_keys(void *_Nonnull dict);
 int swiftvim_dict_size(void *_Nonnull dict);
 
+// Tuples
+void *_Nullable swiftvim_tuple_get(void *_Nonnull tuple, int idx);
+
+
+void *_Nullable swiftvim_call(const char *_Nonnull module, const char *_Nonnull method, const char *_Nullable str); 
+
+void *_Nullable swiftvim_get_module(const char *_Nonnull module);
+void *_Nullable swiftvim_get_attr(void *_Nonnull target, const char *_Nonnull attr);
+
+void *_Nullable swiftvim_call_impl(void *func, void *_Nullable arg1, void *_Nullable arg2);
 
 // Bootstrapping
 // Note: These methods are only for testing purposes
 void swiftvim_initialize();
 void swiftvim_finalize();
-void *_Nullable swiftvim_call(const char *_Nonnull module, const char *_Nonnull method, const char *_Nonnull str); 
+

@@ -30,6 +30,7 @@ class VimValueTests: XCTestCase {
         ("testCommandNone", testCommandNone),
         ("testListCollectionUsage", testListCollectionUsage),
         ("testDictCollectionUsage", testDictCollectionUsage),
+        ("testBufferAttrs", testBufferAttrs),
     ]
 
     func testEvalString() {
@@ -95,9 +96,25 @@ class VimValueTests: XCTestCase {
         swiftvim_initialize()
         mutateRuntime("eval", lambda: "lambda value : dict(a=42, b='a')")
         let result = Vim.eval("")
-        var dict = result.asDictionary()!
+        let dict = result.asDictionary()!
         XCTAssertEqual(dict.keys.count, 2)
         XCTAssertEqual(dict.values.count, 2)
+        swiftvim_finalize()
+    }
+
+    func testBufferAttrs() {
+        swiftvim_initialize()
+        let buffer = Vim.current.buffer
+        XCTAssertEqual(buffer.number, 1)
+        XCTAssertEqual(buffer.name, "mock")
+        swiftvim_finalize()
+    }
+
+    func testWindowAttrs() {
+        swiftvim_initialize()
+        let window = Vim.current.window
+        XCTAssertEqual(window.cursor.0, 1)
+        XCTAssertEqual(window.cursor.1, 2)
         swiftvim_finalize()
     }
 }

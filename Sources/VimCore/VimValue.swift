@@ -1,10 +1,63 @@
 import Foundation
 import VimInterface
 
-public struct VimDictionary {
-    private let value: UnsafeMutableRawPointer
+/// Vim Value represents a value in Vim
+///
+/// This value is generally created from vimscript function calls. It provides
+/// a "readonly" view of Vim's state.
+public class VimValue {
+    fileprivate let value: UnsafeVimValue?
+    private let doDeInit: Bool
 
-    fileprivate init(value: UnsafeMutableRawPointer) {
+    init(value: UnsafeVimValue?, doDeInit: Bool = false) {
+        self.value = value
+        self.doDeInit = doDeInit
+    }
+
+    deinit {
+        /// Correctly decrement when this value is done.
+        if doDeInit {
+            swiftvim_decref(value)
+        }
+    }
+
+    // Mark - Casting
+
+    func asString() -> String? {
+        guard let value = self.value else { return nil }
+        guard let cStr = swiftvim_asstring(value) else {
+            return nil
+        }
+        return String(cString: cStr)
+    }
+
+    func asInt() -> Int? {
+        // Generally, eval results are returned as strings
+        // Perhaps there is a better way to express this.
+        if let strValue = asString(), 
+            let value = Int(strValue) {
+            return value  
+        }
+        guard let value = self.value else { return nil }
+        return Int(swiftvim_asint(value))
+    }
+
+    func asList() -> VimList? {
+        guard let value = self.value else { return nil }
+        return VimList(value: value)
+    }
+
+    func asDictionary() -> VimDictionary? {
+        guard let value = self.value else { return nil }
+        return VimDictionary(value: value)
+    }
+}
+
+// A Dictionary
+public struct VimDictionary {
+    private let value: UnsafeVimValue
+
+    fileprivate init(value: UnsafeVimValue) {
         self.value = value
     }
 
@@ -13,13 +66,19 @@ public struct VimDictionary {
     }
 
     public var keys: VimList {
-        return VimValue(value: swiftvim_dict_keys(value),
-                  doDeInit: true).asList()!
+        guard let list = VimValue(value: swiftvim_dict_keys(value),
+                  doDeInit: true).asList() else {
+            fatalError("Can't get keys")
+         }
+         return list
     }
 
     public var values: VimList {
-        return VimValue(value: swiftvim_dict_values(value),
-                  doDeInit: true).asList()!
+        guard let list =  VimValue(value: swiftvim_dict_values(value),
+                  doDeInit: true).asList() else {
+            fatalError("Can't get values")
+        }
+        return list
     }
 
     public subscript(index: VimValue) -> VimValue? {
@@ -30,7 +89,7 @@ public struct VimDictionary {
             return VimValue(value: v)
         }
         set {
-            swiftvim_dict_set(value, index.value, newValue?.value)
+            swiftvim_dict_set(value, index.value!, newValue?.value)
         }
     }
 
@@ -54,14 +113,14 @@ public struct VimDictionary {
 
 /// A List of VimValues
 public struct VimList: Collection {
-    private let value: UnsafeMutableRawPointer
+    private let value: UnsafeVimValue
 
     /// Cast a VimValue to a VimList
     public init(_ vimValue: VimValue) {
-        self.value = vimValue.value
+        self.value = vimValue.value!
     }
 
-    fileprivate init(value: UnsafeMutableRawPointer) {
+    init(value: UnsafeVimValue) {
         self.value = value
     }
 
@@ -96,73 +155,37 @@ public struct VimList: Collection {
     }
 }
 
-/// Vim Value represents a value in Vim
-public class VimValue {
-    fileprivate let value: UnsafeMutableRawPointer
-    private let doDeInit: Bool
+// MARK - Internal
 
-    fileprivate init(value: UnsafeMutableRawPointer,
-                     doDeInit: Bool = false) {
-        self.value = value
-        self.doDeInit = doDeInit
-    }
+/// This is a helper for internal usage
+typealias UnsafeVimValue = UnsafeMutableRawPointer
 
-    deinit {
-        /// Correctly decrement when this value is done.
-        if doDeInit {
-            swiftvim_decref(value)
+extension UnsafeVimValue {
+    func attrp(_ key: String) -> UnsafeVimValue? {
+        let value = key.withCString { fCStr in
+            return swiftvim_get_attr(
+                self,
+                UnsafeMutablePointer(mutating: fCStr))
         }
+        return value
     }
 
-    // Mark - Casting
-
-    func asString() -> String? {
-        guard let cStr = swiftvim_asstring(value) else {
-            return nil
+    func attr(_ key: String) -> String {
+        let value = key.withCString { fCStr in
+            return swiftvim_get_attr(
+                self,
+                UnsafeMutablePointer(mutating: fCStr))
         }
-        return String(cString: cStr)
+        return String(cString: swiftvim_asstring(value)!)
     }
 
-    func asInt() -> Int? {
+    func attr(_ key: String) -> Int {
+        let value = key.withCString { fCStr in
+            return swiftvim_get_attr(
+                self,
+                UnsafeMutablePointer(mutating: fCStr))
+        }
         return Int(swiftvim_asint(value))
     }
-
-    func asList() -> VimList? {
-        return VimList(value: value)
-    }
-
-    func asDictionary() -> VimDictionary? {
-        return VimDictionary(value: value)
-    }
-}
-
-/// Mark - Vim Interface
-
-public struct Vim {
-
-    /// Run a vim command
-    public static func command(_ cmd: String) -> VimValue {
-        var value: VimValue!
-        cmd.withCString { cStr in
-            // This command returns a None
-            let result = swiftvim_command(
-              UnsafeMutablePointer(mutating: cStr))
-            value = VimValue(value: result!)
-        }
-        return value
-    }
-
-    /// Run a vim command
-    public static func eval(_ cmd: String) -> VimValue {
-        var value: VimValue!
-        cmd.withCString { cStr in
-            // This eval returns a None
-            let result = swiftvim_eval(
-              UnsafeMutablePointer(mutating: cStr))
-            value = VimValue(value: result!)
-        }
-        return value
-    }
-
 }
 
