@@ -18,12 +18,11 @@ static PyObject *SPyString_FromString(const char *input) {
     return PyString_FromString(input);
 #endif
 }
+void *swiftvim_call_impl(void *func, void *arg1, void *arg2);
 
 // module=vim, method=command|exec, str = value
 void *swiftvim_call(const char *module, const char *method, const char *textArg) {
     PyGILState_STATE gstate = PyGILState_Ensure();
-
-    // FIXME: we shouldn't need to always import
     PyObject *pName = SPyString_FromString(module);
     PyObject *pModule = PyImport_Import(pName);
     Py_DECREF(pName);
@@ -33,40 +32,77 @@ void *swiftvim_call(const char *module, const char *method, const char *textArg)
         return NULL;
     }
 
-    void *outValue = NULL;
+    PyObject *arg = SPyString_FromString(textArg);
+    if (!arg) {
+        fprintf(stderr, "swiftvim error: Cannot convert argument\n");
+        return NULL;
+    }
     PyObject *pFunc = PyObject_GetAttrString(pModule, method);
+    void *v = swiftvim_call_impl(pFunc, arg, NULL);
+    Py_DECREF(pModule);
+    PyGILState_Release(gstate);
+    Py_XDECREF(pFunc);
+    return v;
+}
+
+void *swiftvim_get_module(const char *module) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    PyObject *pName = SPyString_FromString(module);
+    PyObject *pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+    if (pModule == NULL) {
+        PyErr_Print();
+        fprintf(stderr, "swiftvim error: failed to load \"%s\"\n", module);
+        return NULL;
+    }
+    PyGILState_Release(gstate);
+    return pModule;
+}
+
+void *swiftvim_get_attr(void *target, const char *method) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    void *v = PyObject_GetAttrString(target, method);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+void *swiftvim_call_impl(void *pFunc, void *arg1, void *arg2) {
+    void *outValue = NULL;
     // pFunc is a new reference 
     if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject *pArgs = PyTuple_New(1);
-        PyObject *pValue = SPyString_FromString(textArg);
-        if (!pValue) {
-            Py_DECREF(pArgs);
-            Py_DECREF(pModule);
-            fprintf(stderr, "swiftvim error: Cannot convert argument\n");
-            return NULL;
+        int argCt = 0;
+        if (arg1) {
+            argCt++;
         }
-        int argOffset = 0;
-        PyTuple_SetItem(pArgs, argOffset, pValue);
-        pValue = PyObject_CallObject(pFunc, pArgs);
+        if (arg2) {
+            argCt++;
+        }
+
+        PyObject *pArgs = PyTuple_New(argCt);
+        /// Add args if needed
+        if (arg1) {
+            PyTuple_SetItem(pArgs, 0, arg1);
+        }
+        if (arg2) {
+            PyTuple_SetItem(pArgs, 1, arg2);
+        }
+        PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
         Py_DECREF(pArgs);
         if (pValue != NULL) {
             outValue = pValue;
         } else {
             Py_DECREF(pFunc);
-            Py_DECREF(pModule);
             PyErr_Print();
             fprintf(stderr,"swiftvim error: call failed\n");
             return outValue;
         }
     } else {
-        if (PyErr_Occurred())
+        if (PyErr_Occurred()) {
             PyErr_Print();
-        fprintf(stderr, "swiftvim error: cannot find function \"%s\"\n", method);
+        }
+        fprintf(stderr, "swiftvim error: cannot find function \"(some)\"\n");
     }
 
-    PyGILState_Release(gstate);
-    Py_XDECREF(pFunc);
-    Py_DECREF(pModule);
     return outValue;
 }
 
@@ -108,21 +144,21 @@ int swiftvim_asint(void *value) {
 
 int swiftvim_list_size(void *list) {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    int v = PyList_Size(list);
+    int v = PySequence_Size(list);
     PyGILState_Release(gstate);
     return v;
 }
 
 void swiftvim_list_set(void *list, size_t i, void *value) {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    PyList_SetItem(list, i, value);
+    PySequence_SetItem(list, i, value);
     PyGILState_Release(gstate);
 }
 
 void *swiftvim_list_get(void *list, size_t i) {
     PyGILState_STATE gstate = PyGILState_Ensure();
     /// Return a borrowed reference
-    void *v = PyList_GET_ITEM(list, i);
+    void *v = PySequence_GetItem(list, i);
     PyGILState_Release(gstate);
     return v;
 }
@@ -182,6 +218,16 @@ void *swiftvim_dict_getstr(void *dict, const char *key) {
     PyGILState_STATE gstate = PyGILState_Ensure();
     /// Return a borrowed reference
     void *v = PyDict_GetItemString(dict, key);
+    PyGILState_Release(gstate);
+    return v;
+}
+
+// MARK - Tuples
+
+void *_Nonnull swiftvim_tuple_get(void *_Nonnull tuple, int idx) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    /// Return a borrowed reference
+    void *v = PyTuple_GetItem(tuple, idx);
     PyGILState_Release(gstate);
     return v;
 }

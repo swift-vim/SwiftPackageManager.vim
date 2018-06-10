@@ -1,22 +1,38 @@
+import types
+import sys
+
+
+
+class MockBuffer():
+    def __init__(self):
+        self.number = 1
+        self.name = "mock"
+
+class MockWindow():
+    def __init__(self):
+        self.cursor = (1, 2)
+
+# actual vim apis
+
+class Current():
+    def __init__(self):
+        self.buffer = MockBuffer()
+	self.window = MockWindow()
+
+current = Current()
 
 class MockRuntime():
     def __init__(self):
-        self.data = []
-        self.command = lambda value : None
-        self.eval = lambda value : value
-
+        self.command = lambda value: None
+        self.eval = lambda value: value
 
 runtime = MockRuntime()
-
-# Actual Vim APIS
 
 def command(value):
     return runtime.command(value)
 
 def eval(value):
     return runtime.eval(value)
-
-# Test helpers
 
 def eval_int(value):
     return int(value)
