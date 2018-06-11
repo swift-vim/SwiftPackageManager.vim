@@ -91,7 +91,6 @@ void *swiftvim_call_impl(void *pFunc, void *arg1, void *arg2) {
         if (pValue != NULL) {
             outValue = pValue;
         } else {
-            Py_DECREF(pFunc);
             PyErr_Print();
             fprintf(stderr,"swiftvim error: call failed\n");
             return outValue;

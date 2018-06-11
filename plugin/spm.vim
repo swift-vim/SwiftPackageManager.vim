@@ -32,7 +32,9 @@ autocmd BufWritePost * call s:OnBufWritePost()
 
 " FIXME: add this to swift
 " autocmd QuitPre      * call s:Pyeval("server.Stop()")
-
+"
+" TODO:
+" autocmd CursorMoved      * call s:Pyeval("swiftvim.event()")
 autocmd CursorMoved      * call s:Pyeval("diag_ui.OnCursorMoved()")
 
 " Run some python

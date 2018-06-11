@@ -16,6 +16,9 @@ struct PluginState {
 
     let editorSericeTask: VimTask<Void>
 
+    // TODO: find a way to read diags when the build updates
+    let diagUI: DiagnosticInterface = DiagnosticInterface()
+
     init() {
         rpc = RPCRunner()
         rpc.start()
@@ -54,8 +57,13 @@ var state: PluginState?
 
 // Core bootstrap
 @_cdecl("plugin_init")
-public func plugin_init(){
+public func plugin_init(event: UnsafePointer<Int8>){
     swiftvim_initialize()
     state = PluginState()
+}
+
+@_cdecl("plugin_user_event")
+public func plugin_user_event(event: UnsafePointer<Int8>){
+    state?.diagUI.onCursorMoved()
 }
 

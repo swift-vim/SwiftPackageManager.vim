@@ -191,13 +191,13 @@ extension VimSupport {
             let oldShowcmd = getIntValue("&showcmd")
             Vim.command("set noruler noshowcmd")
 
-            Vim.command("\(echoCommand) \(escapeForVim(message))")
+            Vim.command("\(echoCommand) '\(escapeForVim(message))'")
 
             set(variable: "&ruler", value: oldRuler)
             set(variable: "&showcmd", value: oldShowcmd)
         } else {
             for line in message.components(separatedBy: "\n") {
-                Vim.command("\(echoCommand) \(escapeForVim(line))")
+                Vim.command("\(echoCommand) '\(escapeForVim(line))'")
             }
         }
         if warning {
@@ -206,9 +206,10 @@ extension VimSupport {
     }
 
     public static func clearIcmSyntaxMatches() {
-        guard let matches = Vim.command("getmatches()").asList() else {
+        guard let matches = Vim.eval("getmatches()").asList() else {
             return
         }
+        // FIXME: Check types
         for matchValue in matches {
             if let match = matchValue.asDictionary(),
                 match["group"]?.asString()?.hasPrefix("Icm") == true {
