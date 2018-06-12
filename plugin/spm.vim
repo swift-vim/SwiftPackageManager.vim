@@ -34,7 +34,7 @@ autocmd BufWritePost * call s:OnBufWritePost()
 " autocmd QuitPre      * call s:Pyeval("server.Stop()")
 "
 " TODO:
-" autocmd CursorMoved      * call s:Pyeval("swiftvim.event()")
+" autocmd CursorMoved      * call s:Pyeval("swiftvim.event(0, 'CursorMoved')")
 autocmd CursorMoved      * call s:Pyeval("diag_ui.OnCursorMoved()")
 
 " Run some python
@@ -58,7 +58,6 @@ plugin_dir  = vim.eval('s:path')
 sys.path.insert(0, os.path.join(plugin_dir, '.build'))
 import swiftvim
 swiftvim.load()
-
 # Setup Legacy diag ui
 sys.path.insert(0, os.path.join(plugin_dir, 'plugin_python'))
 from diagnostic_interface import DiagnosticInterface

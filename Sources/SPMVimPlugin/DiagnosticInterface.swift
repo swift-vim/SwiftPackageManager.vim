@@ -1,3 +1,4 @@
+import VimCore
 
 struct SignPlacement: Hashable {
     let id: Int

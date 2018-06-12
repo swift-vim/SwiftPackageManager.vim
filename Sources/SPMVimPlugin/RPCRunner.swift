@@ -1,5 +1,6 @@
 import Foundation
 import HTTP
+import VimCore
 import VimInterface
 
 /// Mark - Protocol
@@ -103,6 +104,7 @@ public struct RPCRunner {
     public init() {
         let port = FutureValue<Int>()
         self.task = VimTask {
+            () -> Void in
             let server = HTTPServer()
             try! server.start(port: 0, handler: handler)
             port.set(.ok(server.port))

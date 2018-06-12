@@ -19,7 +19,11 @@ public class FutureValue <T> {
     private var value: Result<T>? = nil
     let semaphore = DispatchSemaphore(value: 0)
 
-    func set(_ v: T) {
+    public init() {
+        self.value = nil
+    }
+
+    public func set(_ v: T) {
         if value != nil {
             fatalError("Set value already")
         }
@@ -27,7 +31,7 @@ public class FutureValue <T> {
         semaphore.signal()
     }
 
-    func set(_ v: Result<T>) {
+    public func set(_ v: Result<T>) {
         if value != nil {
             fatalError("Set value already")
         }
@@ -35,11 +39,11 @@ public class FutureValue <T> {
         semaphore.signal()
     }
 
-    func fail(_ e: Error) {
+    public func fail(_ e: Error) {
         set(Result.failure(e))
     }
 
-    func get(timeout: TimeInterval = 0, failure: Result<T> = .failure(ConnectionError.basic("Future did timeout"))) -> Result<T> {
+    public func get(timeout: TimeInterval = 0, failure: Result<T> = .failure(ConnectionError.basic("Future did timeout"))) -> Result<T> {
         if value != nil {
             return value!
         }

@@ -88,7 +88,7 @@ clean:
 # This is the core python module
 .PHONY: vimcore
 vimcore:
-vimcore: SWIFT_OPTS=--product VimCore \
+vimcore: SWIFT_OPTS=--product SPMVimPlugin \
 	-Xcc -I$(PYTHON_INCLUDE) \
 	-Xlinker $(PYTHON_LINKED_LIB)
 vimcore:  build-impl
@@ -98,7 +98,7 @@ vimcore:  build-impl
 	@clang Sources/swiftvim.c -shared -o .build/swiftvim.so \
 		$(PYTHON_LINKED_LIB) \
 		-I$(PYTHON_INCLUDE) \
-		$(PWD)/.build/$(CONFIG)/libVimCore.dylib
+		$(PWD)/.build/$(CONFIG)/libSPMVimPlugin.dylib
 
 .PHONY: run_py
 run_py: .build/swiftvim.so

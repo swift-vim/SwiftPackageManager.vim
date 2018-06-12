@@ -6,8 +6,8 @@
 
 // Plugin init is called to bootstrap the plugin in vim
 // It should deffinitely return
-extern void plugin_init(const char *);
-extern void plugin_user_event(const char *);
+extern int plugin_init(const char *);
+extern const char *plugin_user_event(int, const char *);
 
 static PyObject *swiftvimError;
 
@@ -66,24 +66,32 @@ PyMODINIT_FUNC initswiftvim(void) {
 }
 #endif
 
-
 static int calledPluginInit = 0;
 
 static PyObject *swiftvim_load(PyObject *self, PyObject *args)
 {
+    int status = 1;
     if (calledPluginInit == 0) {
-        plugin_init("init");
+        status = plugin_init("init");
         calledPluginInit = 1;
     } else {
         fprintf(stderr, "warning: called swiftvim.plugin_init more than once");
     }
-    return Py_BuildValue("i", 0);
+    return Py_BuildValue("i", status);
 }
 
 static PyObject *swiftvim_event(PyObject *self, PyObject *args)
 {
-    //TODO: parse out the arg str
-    plugin_user_event("__event__");
-    return Py_BuildValue("i", 0);
+    const char *ctx;
+    int event;
+    void *result;
+    if (!PyArg_ParseTuple(args, "is", &event, &ctx)) {
+        fprintf(stderr, "plugin_user_event parsefail");
+        result = (void *)plugin_user_event(-1, "error parse");
+    } else {
+        result = (void *)plugin_user_event(event, ctx);
+    }
+
+    return Py_BuildValue("s", result);
 }
 

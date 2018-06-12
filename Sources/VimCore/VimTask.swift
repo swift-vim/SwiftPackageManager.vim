@@ -5,7 +5,7 @@ import Foundation
 public final class VimTask<T> : NSObject {
     public typealias VimTaskBlock = () -> T
 
-    init (on thread: Thread? = nil, bl: @escaping VimTaskBlock) {
+    public init (on thread: Thread? = nil, bl: @escaping VimTaskBlock) {
         self.bl = bl
         self.thread = thread
         super.init()
