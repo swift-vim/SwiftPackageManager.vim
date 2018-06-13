@@ -21,7 +21,12 @@ public func SetSharedPlugin(_ plugin: VimPlugin) {
 
 @_cdecl("plugin_user_event")
 public func plugin_user_event(event: Int, context: UnsafePointer<Int8>) -> UnsafePointer<Int8>? {
-    let ret = SharedPlugin?.pluginEvent(event: event,
+    // FIXME: Move this somewhere else.
+    // Ideally, this can be installed into Vim dynamically
+    if event == 2 {
+        VimRunLoop.main.runOnce()
+    }
+    SharedPlugin?.pluginEvent(event: event,
         context: String(cString: context))
-    return UnsafePointer<Int8>(ret)
+    return nil
 }

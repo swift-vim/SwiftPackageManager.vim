@@ -110,11 +110,10 @@ extension VimSupport {
         if bufferNum < 0 {
             return
         }
-        Vim.command("sign undefine icm_dummy_sign")
+        Vim.command("try | exec 'sign undefine icm_dummy_sign' | catch /E155/ | endtry")
         Vim.command("sign unplace \(signId) buffer=\(bufferNum)")
     }
 }
-
 
 extension VimSupport {
     /// Highlight a range in the current window starting from
@@ -133,13 +132,12 @@ extension VimSupport {
         let (lineNum, columnNum) = lineAndColumnNumbersClamped(lineNum: lineNum, columnNum: columnNum)
         if lineEndNum == nil || columnEndNum == nil {
             return getIntValue(
-                "matchadd('\(group)', '%\(lineNum)%{\(columnNum)c')")
+                "matchadd('\(group)', '\\%\(lineNum)l\\%\(columnNum)c')")
         }
         // -1 and then +1 to account for column end not included in the range.
         var (lineEndNum, columnEndNum) = lineAndColumnNumbersClamped(
             lineNum: lineEndNum, columnNum: (columnEndNum ?? 0) - 1)
         columnEndNum += 1
-
         return getIntValue(
             "matchadd('\(group)', '%\(lineNum)l%\(columnNum)c_.\\{{-}}%\(lineEndNum)l%\(columnEndNum)c')")
     }
@@ -212,8 +210,9 @@ extension VimSupport {
         // FIXME: Check types
         for matchValue in matches {
             if let match = matchValue.asDictionary(),
-                match["group"]?.asString()?.hasPrefix("Icm") == true {
-                Vim.eval("matchdelete(\(match["id"]!))")
+                match["group"]?.asString()?.hasPrefix("Icm") == true,
+                let id = match["id"]?.asInt() {
+                Vim.eval("matchdelete(\(id))")
             }
         }
     }

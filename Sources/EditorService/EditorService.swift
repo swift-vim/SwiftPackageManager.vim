@@ -1,69 +1,62 @@
 import Foundation
 import SKQueue
+import SPMProtocol
 
-public struct SwiftBuildError: Codable {
+public struct SwiftBuildDiagnostic {
     public let file: String
     public let line: Int
     public let col: Int
     public let ty: String
     public let message: String
 
-    public static func from(line: String) -> SwiftBuildError? {
+    public static func from(line: String) -> SwiftBuildDiagnostic? {
         let components = line.components(separatedBy: ":")
         guard components.count > 4 else {
             return nil
         }
         let file = components[0]
-        let line = Int(components[1])!
-        let col = Int(components[2])!
+        let line = Int(components[1]) ?? 0
+        let col = Int(components[2]) ?? 0
         let ty = components[3]
         let message = components[3] + ":" + components[4]
-        return SwiftBuildError(file: file, line: line, col: col, ty: ty, message: message)
+        return SwiftBuildDiagnostic(file: file, line: line, col: col, ty: ty, message: message)
     }
 }
 
+func getDiagnostic(from buildDiag: SwiftBuildDiagnostic) -> Diagnostic {
+    return Diagnostic(text: buildDiag.message,
+        fixitAvailable: false,
+        isError: true,
+        location: Diagnostic.Location(lineNum: buildDiag.line,
+            columnNum: buildDiag.col, filepath: buildDiag.file),
+        locationExtent: Diagnostic.LocationExtent(
+            start: Diagnostic.LocationPoint(lineNum: buildDiag.line,
+                columnNum: buildDiag.col),
+            end: nil))
+}
 
 /// EditorService
 /// This is the core plugin backend for SwiftPackageManager.vim
 /// Vim Integration
-/// It communicates with Vim via evaling expressions and running commands
-/// through the Python Vim API
 public struct EditorService: SKQueueDelegate {
     let host: String
     let authToken: String
+    let path: String
 
     /// The editor listens to updates in this log
     static let LastBuildLogPath = ".build/last_build.log"
     static let VimUIStatePath = ".build/spm_vim_ui.json"
     static let VimQueue = DispatchQueue.init(label: "com.spmvim.es")
 
-    public init(host: String, authToken: String) {
+    public init(host: String, authToken: String, path: String) {
         self.host = host
         self.authToken = authToken
-    }
-
-    /// vim.command
-    func vimCommand(command: String) -> String {
-        var result: String!
-        EditorService.VimQueue.sync {
-            result = post(str: command, method: "c")
-        }
-        return result
-    }
-
-    /// vim.eval
-    func vimEval(eval: String) -> String {
-        var result: String!
-        EditorService.VimQueue.sync {
-            result = post(str: eval, method: "e")
-        }
-        return result
+        self.path = path
     }
 
     /// Send a POST request and return the body.
-    func post(str: String, method: String) -> String {
+    func post(message commandData: Data, method: String) -> String {
         let commandPath = host + "/" + method
-        let commandData = str.data(using:.utf8) ?? Data()
         var request = URLRequest(url: URL(string: commandPath)!)
         request.httpBody = commandData
         request.httpMethod = "POST"
@@ -122,7 +115,6 @@ public struct EditorService: SKQueueDelegate {
         // Case 1: the user has cd'd into a SPM dir.
         // Case 2: the user is Vimming a file in some package.
         // Case 2 breaks down when Vimming sub packages.
-        let path = vimEval(eval: "expand('%:p')")
         let firstPackagePath = findPackageRoot(near: FileManager.default.currentDirectoryPath) 
             ?? findPackageRoot(near: path)
         if let packagePath = firstPackagePath {
@@ -145,21 +137,15 @@ public struct EditorService: SKQueueDelegate {
             return
         }
 
-        let errs = file.components(separatedBy: "\n")
-            .map { SwiftBuildError.from(line: $0) }
-            .filter { $0 != nil }
-
-        let statePath = path.replacingOccurrences(of: EditorService.LastBuildLogPath,
-                                                  with: EditorService.VimUIStatePath)
-        if let encodedData: Data = try? JSONEncoder().encode(errs) {
-            do {
-                try encodedData.write(to: URL(fileURLWithPath: statePath), options: [.atomic])
-            } catch {
-                print("error: failed to write data: \(error.localizedDescription)")
-                return
-            }
+        let diags: [Diagnostic] = file.components(separatedBy: "\n")
+            .flatMap { SwiftBuildDiagnostic.from(line: $0) }
+            .map { getDiagnostic(from: $0 ) }
+        let message = DiagnosticMessage(originFile: path,
+            diagnostics: diags)
+        guard let encodedData: Data = try? JSONEncoder().encode(message) else {
+            return
         }
-        _ = vimCommand(command: "call spm#showerrfile('\(path)')")
+        _ = post(message: encodedData, method: "diags")
     }
 }
 

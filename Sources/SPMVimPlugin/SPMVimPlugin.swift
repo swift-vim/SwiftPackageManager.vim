@@ -9,12 +9,11 @@ class SPMPlugin: VimPlugin {
     let editorService: VimProcess
 
     let editorSericeTask: VimTask<Void>
-
-    // TODO: find a way to read diags when the build updates
-    let diagUI: DiagnosticInterface = DiagnosticInterface()
+    let diagUI: DiagnosticInterface
 
     init() {
-        rpc = RPCRunner()
+        let diagUI: DiagnosticInterface = DiagnosticInterface()
+        rpc = RPCRunner(observer: diagUI)
         rpc.start()
 
         let portValue = rpc.port.get()
@@ -26,7 +25,12 @@ class SPMPlugin: VimPlugin {
         let authToken = "TOK"
         let binPath = GetPluginDir() + "/.build/debug/spm-vim"
 
-        let args = ["editor",  authToken, "--port", String(rpcPort)]
+        let args = [
+          "editor",
+          authToken,
+          "--port", String(rpcPort),
+          "--path", Vim.eval("expand('%:p')").asString() ?? ""
+        ]
         let editorService = VimProcess.with(path: binPath, args: args)
         let statusTimer = VimTimer(timeInterval: 1.0) {
             if editorService.process.isRunning == false {
@@ -41,12 +45,26 @@ class SPMPlugin: VimPlugin {
             editorService.process.launch()
             RunLoop.current.run()
         }
+        self.diagUI = diagUI
         editorSericeTask.run()
         statusTimer.resume()
     }
 
+    enum SPMVimEvent: Int {
+        case auQuitPre = 1001
+        case auCursorMoved = 1002
+    }
+
     func pluginEvent(event id: Int, context: String) -> String? {
-        diagUI.onCursorMoved()
+        guard let spmEvent = SPMVimEvent(rawValue: id) else {
+            return nil
+        }
+        switch spmEvent {
+        case .auQuitPre:
+            editorService.process.terminate()
+        case .auCursorMoved:
+            diagUI.onCursorMoved()
+        }
         return nil
     }
 }

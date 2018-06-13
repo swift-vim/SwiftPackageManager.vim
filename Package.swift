@@ -37,13 +37,16 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(name: "EditorService",
-            dependencies: ["LogParser", "SKQueue"]),
+            dependencies: ["LogParser", "SKQueue", "SPMProtocol"]),
         .target(
             name: "SPMVim",
             dependencies: ["Commandant", "LogParser", "EditorService"]),
         .target(
             name: "SPMVimPlugin",
-            dependencies: ["VimCore", "HTTP", "EditorService"]),
+            dependencies: ["VimCore", "HTTP", "EditorService", "SPMProtocol"]),
+
+        // Client <-> Server messages
+        .target(name: "SPMProtocol"),
         .testTarget(
             name: "SPMVimTests",
             dependencies: ["EditorService", "VimCore"]),

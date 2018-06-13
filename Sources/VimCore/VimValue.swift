@@ -23,7 +23,7 @@ public class VimValue {
 
     // Mark - Casting
 
-    func asString() -> String? {
+    public func asString() -> String? {
         guard let value = self.value else { return nil }
         guard let cStr = swiftvim_asstring(value) else {
             return nil
@@ -31,7 +31,7 @@ public class VimValue {
         return String(cString: cStr)
     }
 
-    func asInt() -> Int? {
+    public func asInt() -> Int? {
         // Generally, eval results are returned as strings
         // Perhaps there is a better way to express this.
         if let strValue = asString(), 
@@ -42,19 +42,19 @@ public class VimValue {
         return Int(swiftvim_asint(value))
     }
 
-    func asList() -> VimList? {
+    public func asList() -> VimList? {
         guard let value = self.value else { return nil }
         return VimList(value: value)
     }
 
-    func asDictionary() -> VimDictionary? {
+    public func asDictionary() -> VimDictionary? {
         guard let value = self.value else { return nil }
         return VimDictionary(value: value)
     }
 }
 
 // A Dictionary
-public struct VimDictionary {
+public class VimDictionary {
     private let value: UnsafeVimValue
 
     fileprivate init(value: UnsafeVimValue) {
@@ -67,7 +67,7 @@ public struct VimDictionary {
 
     public var keys: VimList {
         guard let list = VimValue(value: swiftvim_dict_keys(value),
-                  doDeInit: true).asList() else {
+                  doDeInit: false).asList() else {
             fatalError("Can't get keys")
          }
          return list
@@ -75,7 +75,7 @@ public struct VimDictionary {
 
     public var values: VimList {
         guard let list =  VimValue(value: swiftvim_dict_values(value),
-                  doDeInit: true).asList() else {
+                  doDeInit: false).asList() else {
             fatalError("Can't get values")
         }
         return list
