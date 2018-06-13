@@ -17,7 +17,7 @@ extension String: VimScriptConvertible {
     }
 }
 
-struct VimSupport {
+public struct VimSupport {
     public static func escapeForVim(_ value: String) -> String {
         return toUnicode(value).replacingOccurrences(of: "'", with: "''")
     }
