@@ -1,6 +1,7 @@
 // This API should exisit at the plugin level.
 // C functions at the global scope should be namespaced to the plugin name.
 import VimCore
+import Vim
 
 // Core bootstrap for the plugin
 @_cdecl("plugin_init")
@@ -24,7 +25,7 @@ public func plugin_user_event(event: Int, context: UnsafePointer<Int8>) -> Unsaf
     // FIXME: Move this somewhere else.
     // Ideally, this can be installed into Vim dynamically
     if event == 2 {
-        VimRunLoop.main.runOnce()
+        InternalVimMainTheadCallback()
     }
     SharedPlugin?.pluginEvent(event: event,
         context: String(cString: context))

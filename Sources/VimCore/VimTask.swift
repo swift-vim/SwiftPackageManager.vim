@@ -2,16 +2,10 @@ import Foundation
 
 private var rlLock = os_unfair_lock_s()
 
-/// Hook into Vim's main thread in a thread safe way.
-/// Vim is a single threaded, thread unsafe program so any code that touches
-/// vim must run on the main thread.
-/// This includes any function calls and associated data.
-/// Beware, that not adhereing to this will case several issues and thread
-/// safety is not validated.
-public final class VimRunLoop {
+fileprivate final class VimRunLoop {
     private let source: CFRunLoopSource 
     private let runLoopRef: CFRunLoop
-    public let runLoop: RunLoop
+    private let runLoop: RunLoop
 
     private init() { 
         let runLoop = RunLoop.current
@@ -62,19 +56,19 @@ public final class VimTask<T> : NSObject {
         super.init()
     }
 
-    /// Schedule on the main
+    /// Schedule on Vim's main thread in a thread safe way.
+    /// Vim is a "single threaded", thread unsafe program, so any code that touches
+    /// vim must run on the main thread.
+    /// 
+    /// This includes any function calls and associated data.
+    /// Beware, that not adhereing to this will case several issues and thread
+    /// safety is generally not validated.
     public static func onMain(_ bl: @escaping VimTaskBlock) {
         if Thread.current == Thread.main {
             _ = bl()
             return
         }
         VimTask(main: true, bl: bl).run()
-    }
-
-    public static func ensureMain() {
-        guard Thread.current == Thread.main else {
-            fatalError("error: main thread check failed")
-        }
     }
 
     public var isDone: Bool {
@@ -113,5 +107,16 @@ public final class VimTask<T> : NSObject {
             self.running = false
         }
     }
+}
+
+/// Check in code if thread is on the main
+public func ensureMain() {
+    guard Thread.current == Thread.main else {
+        fatalError("error: main thread check failed")
+    }
+}
+
+public func InternalVimMainTheadCallback() {
+    VimRunLoop.main.runOnce()
 }
 

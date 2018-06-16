@@ -15,7 +15,7 @@ public class VimBuffer {
         return self.value.attr("name")
     }()
 
-    func asList() -> VimList {
+    public func asList() -> VimList {
         return VimList(value: self.value)
     }
 }

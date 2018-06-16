@@ -1,5 +1,6 @@
 import VimCore
 import Foundation
+import Vim
 
 class SPMPlugin: VimPlugin {
     let rpc: RPCRunner

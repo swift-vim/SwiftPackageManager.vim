@@ -1,6 +1,7 @@
 import VimCore
 import EditorService
 import SPMProtocol
+import Vim
 
 struct SignPlacement: Hashable {
     let id: Int

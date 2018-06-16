@@ -1,4 +1,5 @@
 import Foundation
+import Vim
 
 /// Convert to a vimscript string
 public protocol VimScriptConvertible {
@@ -15,6 +16,10 @@ extension String: VimScriptConvertible {
     public func toVimScript() -> String {
         return self
     }
+}
+
+extension Vim {
+
 }
 
 public struct VimSupport {

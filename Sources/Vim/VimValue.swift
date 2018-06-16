@@ -1,11 +1,10 @@
-import Foundation
 import VimInterface
 
 /// Vim Value represents a value in Vim
 ///
 /// This value is generally created from vimscript function calls. It provides
 /// a "readonly" view of Vim's state.
-public class VimValue {
+public final class VimValue {
     fileprivate let value: UnsafeVimValue?
     private let doDeInit: Bool
 
@@ -54,7 +53,7 @@ public class VimValue {
 }
 
 // A Dictionary
-public class VimDictionary {
+public final class VimDictionary {
     private let value: UnsafeVimValue
 
     fileprivate init(value: UnsafeVimValue) {
@@ -112,7 +111,7 @@ public class VimDictionary {
 
 
 /// A List of VimValues
-public struct VimList: Collection {
+public final class VimList: Collection {
     private let value: UnsafeVimValue
 
     /// Cast a VimValue to a VimList

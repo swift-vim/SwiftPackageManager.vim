@@ -53,7 +53,10 @@ let package = Package(
 
          // VimCore
         .target(name: "VimCore",
+            dependencies: ["Vim"]),
+        .target(name: "Vim",
             dependencies: ["VimInterface"]),
+
         .target(name: "VimInterface",
             dependencies: []),
         .testTarget(

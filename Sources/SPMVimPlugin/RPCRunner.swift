@@ -3,6 +3,7 @@ import HTTP
 import VimCore
 import EditorService
 import SPMProtocol
+import Vim
 
 struct VimLogger {
     let fileHandle: FileHandle
