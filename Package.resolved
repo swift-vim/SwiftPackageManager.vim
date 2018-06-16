@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/Carthage/Commandant",
         "state": {
           "branch": null,
-          "revision": "7f29606ec3a2054a601f0e72f562a104dbc1a11a",
-          "version": "0.13.0"
+          "revision": "066bf9a79c37cf24fe4746ab7a1793b0359d1fe5",
+          "version": "0.14.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/Quick/Nimble.git",
         "state": {
           "branch": null,
-          "revision": "21f4fed2052cea480f5f1d2044d45aa25fdfb988",
-          "version": "7.1.1"
+          "revision": "8023e3980d91b470ad073d6da843b73f2eeb1844",
+          "version": "7.1.2"
         }
       },
       {
@@ -61,6 +61,15 @@
         "state": {
           "branch": null,
           "revision": "671be3123752a8eebd18dccb9321e1dfcae8f9c0",
+          "version": null
+        }
+      },
+      {
+        "package": "Vim",
+        "repositoryURL": "https://github.com/swift-vim/SwiftForVim.git",
+        "state": {
+          "branch": null,
+          "revision": "15f248e31501378bf5a56a23851cd670b860d646",
           "version": null
         }
       }

@@ -1,83 +1,5 @@
-import Foundation
+import VimKit
 import Vim
-
-/// Convert to a vimscript string
-public protocol VimScriptConvertible {
-    func toVimScript() -> String
-}
-
-extension Int: VimScriptConvertible{
-    public func toVimScript() -> String {
-        return String(self)
-    }
-}
-
-extension String: VimScriptConvertible {
-    public func toVimScript() -> String {
-        return self
-    }
-}
-
-extension Vim {
-    public static func escapeForVim(_ value: String) -> String {
-        return value.replacingOccurrences(of: "'", with: "''")
-    }
-
-    /// Mark - Eval Helpers
-    public static func exists(variable: String) -> Bool {
-        return get("exists('\(escapeForVim(variable))'")
-    }
-
-    public static func set(variable: String, value: VimScriptConvertible) {
-        command("let \(variable) = \(value.toVimScript())")
-    }
-
-    public static func get(variable: String) -> VimValue {
-        return eval(variable)
-    }
-
-    public static func get(_ variable: String) -> VimValue {
-        return eval(variable)
-    }
-
-    public static func get(_ variable: String) -> Bool {
-        return Bool((eval(variable).asInt() ?? 0) != 0)
-    }
-
-    public static func get(_ variable: String) -> Int {
-        return eval(variable).asInt() ?? 0
-    }
-
-    /// Returns the 0-based current line and 0-based current column
-    public static func currentLineAndColumn() -> (Int, Int) {
-        return current.window.cursor
-    } 
-
-    // FIXME: this is not 100%
-    // It doesn't handle cases like /tmp/
-    public static func realpath(_ path: String) -> String {
-        return URL(fileURLWithPath: path)
-            .standardizedFileURL.resolvingSymlinksInPath().path
-    }
-
-    // MARK - Buffers
-
-    public static func getBufferNumberForFilename(filename: String, openFileIfNeeded: Bool=false) -> Int {
-        let path = escapeForVim(realpath(filename))
-        let create = openFileIfNeeded == true ? "1" : "0"
-        return get("bufnr('\(path)', \(create))")
-    }
-
-    public static func bufferIsVisible(bufferNumber: Int) -> Bool {
-        guard bufferNumber > 0 else {
-            return false
-        }
-        let windowNumber: Int = get("bufwinnr(\(bufferNumber))")
-        return windowNumber != -1
-    }
-}
-
-// MARK - Diagnostics
 
 extension Vim {
     public static func placeSign(in bufferNum: Int, signId: Int, lineNum: Int,  isError: Bool=true) {
@@ -204,7 +126,7 @@ extension Vim {
     }
 
     public static func clearIcmSyntaxMatches() {
-        guard let matches = eval("getmatches()").asList() else {
+        guard let matches = eval("getmatches()")?.asList() else {
             return
         }
         // FIXME: Check types
@@ -217,4 +139,3 @@ extension Vim {
         }
     }
 }
-

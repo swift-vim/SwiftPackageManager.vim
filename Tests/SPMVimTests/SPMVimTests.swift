@@ -1,6 +1,6 @@
 import XCTest
 @testable import EditorService
-import VimCore
+import VimKit
 import SPMVimPlugin
 import SPMProtocol
 
@@ -24,7 +24,7 @@ class SPMVimTests: XCTestCase {
         XCTAssertEqual(err.message, " error: use of unresolved identifier 'a'nan^n")
     }
 
-    //TODO: Move this over to VimCore
+    //TODO: Move this over to VimKit
     func testProcess() {
         let process = VimProcess.with(path: "/bin/bash",
                    args: ["-c", "/bin/ls 2>&1 | cat > /tmp/x"])
