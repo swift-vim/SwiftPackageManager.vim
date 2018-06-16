@@ -31,7 +31,7 @@ let s:path = fnamemodify(expand('<sfile>:p:h'), ':h')
 " autocmds
 
 " Show a message when the user moves
-autocmd CursorMoved * call s:Pyeval("swiftvim.event(1002, '')")
+autocmd CursorMoved * call s:Pyeval("spmvim.event(1002, '')")
 
 " Run some python
 function! s:Pyeval( eval_string )
@@ -52,8 +52,8 @@ plugin_dir  = vim.eval('s:path')
 
 # Bootstrap Swift Plugin
 sys.path.insert(0, os.path.join(plugin_dir, '.build'))
-import swiftvim
-swiftvim.load()
+import spmvim
+spmvim.load()
 
 vim.command('return 1')
 EOF
@@ -61,7 +61,7 @@ endfunction
 
 " Wake up the runloop 
 fun s:runloop_timer(timer)
-    call s:Pyeval("swiftvim.event(2, '')")
+    call s:Pyeval("spmvim.event(2, '')")
 endf
 
 let timer = timer_start(100, function('s:runloop_timer'), {'repeat':-1})

@@ -1,6 +1,8 @@
 import XCTest
 @testable import EditorService
 import VimCore
+import SPMVimPlugin
+import SPMProtocol
 
 class SPMVimTests: XCTestCase {
     static var allTests = [
@@ -14,7 +16,7 @@ class SPMVimTests: XCTestCase {
 
         // let pattern = "(.*)\\+:(\\d\\+):(\\d\\+):\\s*error:\\s*\\(.*\\)$"
         // FIXME: handle errors of arbitrary len
-        let err = SwiftBuildError.from(line: line)!
+        let err = SwiftBuildDiagnostic.from(line: line)!
         XCTAssertEqual(err.file, "/SwiftPackageManager.vim/Sources/SPMVim/main.swift")
         XCTAssertEqual(err.line, 6)
         XCTAssertEqual(err.col, 1)

@@ -1,6 +1,7 @@
 import XCTest
 import VimCore
 import VimInterface
+import Vim
 
 @testable import VimCore
 

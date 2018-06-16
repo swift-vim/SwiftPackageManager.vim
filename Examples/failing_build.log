@@ -6,11 +6,11 @@ Compile Swift Module 'SKQueue' (1 sources)
 Compile Swift Module 'LogParser' (1 sources)
 Compile Swift Module 'SwiftCompilationDatabase' (1 sources)
 Compile Swift Module 'EditorService' (1 sources)
-Compile Swift Module 'VimCore' (4 sources)
-/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/VimCore/VimValue.swift:3:1: error: expressions are not allowed at the top level
+Compile Swift Module 'Vim' (4 sources)
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/Vim/VimValue.swift:3:1: error: expressions are not allowed at the top level
 a
 ^
-/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/VimCore/VimValue.swift:3:1: error: use of unresolved identifier 'a'
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/Vim/VimValue.swift:3:1: error: use of unresolved identifier 'a'
 a
 ^
 

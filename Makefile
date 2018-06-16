@@ -11,15 +11,15 @@ all: CONFIG=debug
 # FIXME: the .dylib is not being built in release..
 .PHONY: release
 release: CONFIG=release
-release: cli .build/swiftvim.so
+release: cli .build/spmvim.so
 
 .PHONY: debug
 debug: CONFIG=debug
-debug: cli .build/swiftvim.so
+debug: cli .build/spmvim.so
 
 .PHONY: plugin
 plugin: CONFIG=debug
-plugin: .build/swiftvim.so
+plugin: .build/spmvim.so
 
 # Dynamically find python vars
 # Note, that this is OSX specific
@@ -86,22 +86,23 @@ clean:
 	rm -rf .build/release/*
 
 # This is the core python module
-.PHONY: vimcore
-vimcore:
-vimcore: SWIFT_OPTS=--product SPMVimPlugin \
+.PHONY: pluginlib
+pluginlib:
+pluginlib: SWIFT_OPTS=--product SPMVimPlugin  \
 	-Xcc -I$(PYTHON_INCLUDE) \
+    -Xcc -fvisibility=hidden \
 	-Xlinker $(PYTHON_LINKED_LIB)
-vimcore:  build-impl
+pluginlib: build-impl
 
-# FIXME: Consider moving this into SPM
-.build/swiftvim.so: Sources/*.c vimcore
-	@clang Sources/swiftvim.c -shared -o .build/swiftvim.so \
-		$(PYTHON_LINKED_LIB) \
-		-I$(PYTHON_INCLUDE) \
-		$(PWD)/.build/$(CONFIG)/libSPMVimPlugin.dylib
+# Build the shared object for Vim
+.build/spmvim.so: pluginlib
+	@clang -g \
+		-Xlinker $(PYTHON_LINKED_LIB) \
+		-Xlinker $(PWD)/.build/$(CONFIG)/libSPMVimPlugin.dylib \
+		-shared -o .build/spmvim.so
 
 .PHONY: run_py
-run_py: .build/swiftvim.so
+run_py: .build/spmvim.so
 	python Utils/main.py
 
 # Build compile_commands.json

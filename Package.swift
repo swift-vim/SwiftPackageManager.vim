@@ -18,6 +18,7 @@ let package = Package(
             targets: ["SPMVimPlugin"]),
         .library(
             name: "VimInterface",
+            type: .static,
             targets: ["VimInterface"]),
     ],
 
@@ -49,7 +50,7 @@ let package = Package(
         .target(name: "SPMProtocol"),
         .testTarget(
             name: "SPMVimTests",
-            dependencies: ["EditorService", "VimCore"]),
+            dependencies: ["EditorService", "VimCore", "SPMVimPlugin"]),
 
          // VimCore
         .target(name: "VimCore",

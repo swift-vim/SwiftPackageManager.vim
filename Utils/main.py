@@ -10,9 +10,9 @@ runtime_dir = os.path.join(src_root, 'Tests',
 sys.path.append(runtime_dir)
 
 import vim
-import swiftvim
+import spmvim
 print("build_root", build_root)
-result = swiftvim.load()
+result = spmvim.load()
 print("Loaded spmvim", result)
 from time import sleep
 sleep(100000)
