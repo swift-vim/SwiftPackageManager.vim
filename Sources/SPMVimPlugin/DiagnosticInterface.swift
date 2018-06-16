@@ -1,4 +1,6 @@
 import VimCore
+import EditorService
+import SPMProtocol
 
 struct SignPlacement: Hashable {
     let id: Int
@@ -16,35 +18,10 @@ struct SignPlacement: Hashable {
     }
 }
 
-struct DiagnosticViewModel {
-    struct Location {
-        let lineNum: Int
-        let columnNum: Int
-        let filepath: String
-    }
+typealias BufferInfo = [Int: [Int: [Diagnostic]]]
 
-    struct LocationPoint {
-        let lineNum: Int
-        let columnNum: Int
-    }
-
-    struct LocationExtent {
-        let start: LocationPoint
-        let end: LocationPoint
-    }
-
-    let text: String
-    let fixitAvailable: Bool
-    let isError: Bool
-
-    let location: Location
-    let locationExtent: LocationExtent?
-}
-
-typealias BufferInfo = [Int: [Int: [DiagnosticViewModel]]]
-
-class DiagnosticInterface {
-    var previousLineNumber = 1
+final class DiagnosticInterface: RPCObserver {
+    var previousLineNumber = -1
     var nextSignId = 1  
     var placedSigns: [SignPlacement] = []
 
@@ -53,7 +30,7 @@ class DiagnosticInterface {
 
     public func onCursorMoved() {
         let (line, _) = VimSupport.currentLineAndColumn()
-        guard line == previousLineNumber else {
+        guard line != previousLineNumber else {
             return
         }
         previousLineNumber = line
@@ -79,15 +56,16 @@ class DiagnosticInterface {
         diagMessageNeedsClearing = true
     }
 
-    public func update(diagnostics diags: [DiagnosticViewModel]) {
+    func update(diagnostics diags: [Diagnostic]) {
+        bufferNumberToLineToDiags = [:]
         // 1) Update the listing of diags in the buffer
         // 2) Update the signs
         // 3) Update Squiggles
-
+        // 4) Open the log
         diags.forEach {
             diag -> Void in
             let bufferNum = VimSupport.getBufferNumberForFilename(filename: diag.location.filepath)
-            var bufferInfo: [Int: [DiagnosticViewModel]]
+            var bufferInfo: [Int: [Diagnostic]]
             bufferInfo = bufferNumberToLineToDiags[bufferNum] ?? [:]
             var diags = bufferInfo[diag.location.lineNum] ?? []
             diags.append(diag)
@@ -99,6 +77,13 @@ class DiagnosticInterface {
             bufferNumberToLineToDiags: bufferNumberToLineToDiags,
             nextSignId: nextSignId)
         UpdateSquiggles(bufferNumberToLineToDiags: bufferNumberToLineToDiags)
+    }
+
+    public func didGet(message: DiagnosticMessage) {
+        update(diagnostics: message.diagnostics)
+        if let path = message.originFile {
+            Vim.command("call spm#showerrfile('\(path)')")
+        }
     }
 }
 
@@ -118,12 +103,12 @@ func UpdateSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags: Buffer
     let newPlaced = PlaceNewSigns(keptSigns: keptSigns,
          newSigns: newSigns)
     UnplaceObseleteSigns(keptSigns: keptSigns,
-         newSigns: newSigns)
+         placedSigns: placedSigns)
     if needsDummy {
         VimSupport.unPlaceDummySign(signId: nextSignId + 1,
             bufferNum: Vim.current.buffer.number)
     }
-    return (newPlaced, nextSignId)
+    return (newPlaced + keptSigns, nextSignId)
 }
 
 /// Get signs for the visibile buffer
@@ -132,8 +117,8 @@ func GetKeptAndNewSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags:
         return VimSupport.bufferIsVisible(bufferNumber: $0)
     }
     var oNextSignId = nextSignId
-    var keptSings: [SignPlacement] = [] 
-    var newSings: [SignPlacement] = [] 
+    var keptSings: Set<SignPlacement> = Set()
+    var newSings: Set<SignPlacement> = Set()
     visibleBuffers.forEach {
         buffNum in
         let bufferInfo = bufferNumberToLineToDiags[buffNum] ?? [:]
@@ -145,15 +130,15 @@ func GetKeptAndNewSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags:
                 line: line, buffer: buffNum, isError: firstDiag.isError)
             /// Get the previous sign ( this is required to unplace )
             if let existing = placedSigns.first(where: { $0 == sign }) {
-                keptSings.append(existing)
+                keptSings.insert(existing)
             } else {
-                newSings.append(sign)
+                newSings.insert(sign)
                 oNextSignId = oNextSignId + 1
             }
         }
     }
 
-    return (newSings, keptSings, oNextSignId)
+    return (Array(newSings), Array(keptSings), oNextSignId)
 }
 
 func PlaceNewSigns(keptSigns: [SignPlacement], newSigns: [SignPlacement]) -> [SignPlacement] {
@@ -168,10 +153,10 @@ func PlaceNewSigns(keptSigns: [SignPlacement], newSigns: [SignPlacement]) -> [Si
     }
 }
 
-func UnplaceObseleteSigns(keptSigns: [SignPlacement], newSigns: [SignPlacement]) {
-    newSigns.forEach {
+func UnplaceObseleteSigns(keptSigns: [SignPlacement], placedSigns: [SignPlacement]) {
+    placedSigns.forEach {
         sign in 
-        if keptSigns.contains(sign) == false {
+        if keptSigns.contains(sign) {
             return
         }
         VimSupport.unplaceSignInBuffer(bufferNumber: sign.buffer, signId: sign.id)

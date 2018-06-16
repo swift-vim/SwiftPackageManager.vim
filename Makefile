@@ -43,7 +43,7 @@ build-impl: py_vars
 build-impl:
 	@echo "Building.."
 	@mkdir -p .build/$(CONFIG)
-	@swift build -c $(CONFIG) $(SWIFT_OPTS) | tee $(LAST_LOG)
+	@swift build -c $(CONFIG) $(SWIFT_OPTS)  -Xswiftc "-target"  -Xswiftc "x86_64-apple-macosx10.12" | tee $(LAST_LOG)
 
 # Build and install the command line program
 .PHONY: install_cli
@@ -123,3 +123,19 @@ reset:
 .PHONY: push_error
 push_error:
 	cat Examples/failing_build.log > .build/last_build.log
+
+.PHONY: clear_error
+clear_error:
+	echo "" > .build/last_build.log
+
+.PHONY: pe
+pe: push_error
+
+.PHONY: ce
+ce: clear_error
+
+stress:
+	for i in $$(seq 1 15); do make pe && make ce && sleep 1; done
+
+killvim:
+	for p in $$(ps aux | grep vim | awk ' { print $$2 }' ); do kill -9 $$p; done

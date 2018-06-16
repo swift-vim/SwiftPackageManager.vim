@@ -1,98 +1,91 @@
 import Foundation
 import HTTP
 import VimCore
-import VimInterface
+import EditorService
+import SPMProtocol
 
-/// Mark - Protocol
+struct VimLogger {
+    let fileHandle: FileHandle
+    let logFile = "/private/var/tmp/" + UUID().uuidString
+    private let loggerQueue = DispatchQueue(label: "com.spmvim.logger")
 
-/// Currently, it supports command and eval
-/// 
-/// Note: we send all data back over the wire in the form
-/// of a string.
-///
-/// Eventually, the protocol should encode correct data types.
-/// This is mainly useful to notifiy the UI when data has updated
-/// So the treatment of return values is mostly optional.
-
-enum RPCMethod: String {
-    case command = "c"
-    case eval = "e"
-}
-
-/// Run a vim eval and send it back over the wire
-
-func vimEval(text: String) -> Data {
-    var data: Data!
-    _ = text.withCString {
-        cStr -> Void in
-        let result = swiftvim_eval(
-            UnsafeMutablePointer(mutating: cStr))
-        let asStr = swiftvim_asstring(result)
-        if let str = asStr {
-            let value = String(cString: str)
-            data = value.data(using: .utf8)
-        } else {
-            data = Data()
-        }
-    }
-    return data
-}
-
-func vimCommand(text: String) -> Data {
-    var data: Data!
-    _ = text.withCString {
-        cStr -> Void in
-        let result = swiftvim_command(
-            UnsafeMutablePointer(mutating: cStr))
-        let asStr = swiftvim_asstring(result)
-        if let str = asStr {
-            let value = String(cString: str)
-            data = value.data(using: .utf8)
-        } else {
-            data = Data()
-        }
-    }
-    return data
-}
-
-func invokeVimForURI(uri: String, data dData: DispatchData) -> Data {
-    // This is kind of hacky:
-    // accept urls of the form /method
-    guard let data: Data = (((dData as Any) as? NSData) as? Data) else {
-        return Data()
+    init() {
+        try? Data().write(to: URL(fileURLWithPath: logFile), options: [.atomic])
+        fileHandle = FileHandle(forWritingAtPath: logFile)!
     }
 
-    let part = uri.replacingOccurrences(of: "/", with: "")
-    guard let method = RPCMethod(rawValue: part) else {
-        return Data()
-    }
-    guard let body = String(data: data, encoding: .utf8) else {
-        return Data()
-    }
-
-    switch method {
-    case .command:
-        return VimTask.onMain { vimCommand(text: body) }
-    case .eval:
-        return VimTask.onMain { vimEval(text: body) }
-    }
-}
-
-func handler(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {
-    response.writeHeader(status: .ok)
-    return .processBody { (chunk, stop) in
-        switch chunk {
-        case .chunk(let data, let finishedProcessing):
-            let result = invokeVimForURI(uri: request.target,
-                                         data: data)
-            response.writeBody(result) { _ in
-                finishedProcessing()
+    func log(_ msg: String) {
+        loggerQueue.async {    
+            guard let data = msg.data(using: .utf8) else {
+                return
             }
-        case .end:
-            response.done()
-        default:
-            stop = true
-            response.abort()
+            self.fileHandle.write(data)
+        }
+    }
+        
+    static let shared = VimLogger()
+}
+
+protocol RPCObserver {
+    func didGet(message: DiagnosticMessage)
+}
+
+public struct RPCHandler {
+    let observer: RPCObserver
+
+    enum RPCMethod: String {
+        case diags = "diags"
+    }
+  
+    func handleDiags(data: Data) {
+        let decoder = JSONDecoder()
+        if let message = try? decoder.decode(DiagnosticMessage.self, from: data) {
+            observer.didGet(message: message)
+        } else {
+            print("error: invalid request")
+        }
+    }
+
+    func handleRPC(uri: String, data dData: DispatchData) -> Data {
+        // This is kind of hacky:
+        // accept urls of the form /method
+        VimLogger.shared.log("GotMessage\n")
+        guard let data: Data = (((dData as Any) as? NSData) as? Data) else {
+            return Data()
+        }
+
+        let part = uri.replacingOccurrences(of: "/", with: "")
+        guard let method = RPCMethod(rawValue: part) else {
+            return Data()
+        }
+        switch method {
+        case .diags:
+            VimLogger.shared.log("WillRenderDiags\n")
+            VimTask.onMain {
+                () -> Void in
+                VimLogger.shared.log("RenderOnMain\n")
+                self.handleDiags(data: data)
+            }
+            return Data()
+        }
+    }
+
+    func handler(request: HTTPRequest, response: HTTPResponseWriter) -> HTTPBodyProcessing {
+        response.writeHeader(status: .ok)
+        return .processBody { (chunk, stop) in
+            switch chunk {
+            case .chunk(let data, let finishedProcessing):
+                let result = self.handleRPC(uri: request.target,
+data: data)
+                response.writeBody(result) { _ in
+                    finishedProcessing()
+                }
+            case .end:
+                response.done()
+            default:
+                stop = true
+                response.abort()
+            }
         }
     }
 }
@@ -100,16 +93,18 @@ func handler(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyPro
 public struct RPCRunner {
     let task: VimTask<Void>
     let port: FutureValue<Int>
-
-    public init() {
+    let handler: RPCHandler
+    init(observer: RPCObserver) {
         let port = FutureValue<Int>()
+        let handler = RPCHandler(observer: observer)
         self.task = VimTask {
             () -> Void in
             let server = HTTPServer()
-            try! server.start(port: 0, handler: handler)
+            try! server.start(port: 0, handler: handler.handler)
             port.set(.ok(server.port))
             RunLoop.current.run()
         }
+        self.handler = handler
         self.port = port
     }
 

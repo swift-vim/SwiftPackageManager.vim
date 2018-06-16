@@ -126,7 +126,8 @@ struct EditorServiceCommand: CommandProtocol {
 
     func run(_ options: Options) -> Result<(), BasicError> {
         let host = "http://localhost:" + options.port
-        let service = EditorService(host: host, authToken: options.authToken)
+        let service = EditorService(host: host, authToken: options.authToken, 
+            path: options.path)
         service.start()
         return .success(())
     }
@@ -135,17 +136,20 @@ struct EditorServiceCommand: CommandProtocol {
 struct EditorServiceOptions: OptionsProtocol {
     let authToken: String
     let port: String
+    let path: String
 
-    static func create(_ authToken: String) -> (String) -> EditorServiceOptions {
-        return { port in
-          EditorServiceOptions(authToken: authToken, port: port)
-        }
+    static func create(_ authToken: String) -> (String) -> (String) -> EditorServiceOptions {
+        return { port in { path in
+            EditorServiceOptions(authToken: authToken, port: port,
+                path: path)
+        } }
     }
 
     static func evaluate(_ m: CommandMode) -> Result<EditorServiceOptions, CommandantError<BasicError>> {
         return create
             <*> m <| Argument(defaultValue: "", usage: "The auth token for the editor interface")
             <*> m <| Option(key: "port", defaultValue: "0", usage: "port of the editor interface")
+            <*> m <| Option(key: "path", defaultValue: "", usage: "path of file in the package")
     }
 }
 

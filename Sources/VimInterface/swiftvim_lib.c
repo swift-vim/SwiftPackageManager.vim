@@ -1,5 +1,25 @@
 #include <Python.h>
+#include <execinfo.h>
 #include <unistd.h>
+#include <stdio.h>
+
+static FILE *_plugin_error_f = NULL;
+
+static FILE *plugin_error_f() {
+    if (_plugin_error_f != NULL) {
+        return _plugin_error_f;
+    }
+
+    static char template[] = "/private/tmp/swiftvim_stderr.logXXXXXX";
+    char fname[PATH_MAX];
+    char buf[BUFSIZ];
+    strcpy(fname, template);
+    mkstemp(fname);
+
+    printf("logged errors to %s\n", fname);
+    _plugin_error_f = fopen(fname, "w+");
+    return _plugin_error_f;
+}
 
 /// Bridge PyString_AsString to both runtimes
 static const char *SPyString_AsString(PyObject *input) {
@@ -28,13 +48,13 @@ void *swiftvim_call(const char *module, const char *method, const char *textArg)
     Py_DECREF(pName);
     if (pModule == NULL) {
         PyErr_Print();
-        fprintf(stderr, "swiftvim error: failed to load \"%s\"\n", module);
+        fprintf(plugin_error_f(), "swiftvim error: failed to load \"%s\"\n", module);
         return NULL;
     }
 
     PyObject *arg = SPyString_FromString(textArg);
     if (!arg) {
-        fprintf(stderr, "swiftvim error: Cannot convert argument\n");
+        fprintf(plugin_error_f(), "swiftvim error: Cannot convert argument\n");
         return NULL;
     }
     PyObject *pFunc = PyObject_GetAttrString(pModule, method);
@@ -52,7 +72,7 @@ void *swiftvim_get_module(const char *module) {
     Py_DECREF(pName);
     if (pModule == NULL) {
         PyErr_Print();
-        fprintf(stderr, "swiftvim error: failed to load \"%s\"\n", module);
+        fprintf(plugin_error_f(), "swiftvim error: failed to load \"%s\"\n", module);
         return NULL;
     }
     PyGILState_Release(gstate);
@@ -64,6 +84,21 @@ void *swiftvim_get_attr(void *target, const char *method) {
     void *v = PyObject_GetAttrString(target, method);
     PyGILState_Release(gstate);
     return v;
+}
+
+static void print_basic_error_desc() {
+    // This goes to stderr, which vim can parse
+    PyErr_Print();
+
+    fprintf(plugin_error_f(), "\n=== startCallStack == \n");
+    void *callstack[128];
+    int frames = backtrace(callstack, 128);
+    char **strs = backtrace_symbols(callstack, frames);
+    for (int i = 0; i < frames; ++i) {
+        fprintf(plugin_error_f(), "%s\n", strs[i]);
+    }
+    free(strs);
+    fprintf(plugin_error_f(), "\n=== endCallStack == \n");
 }
 
 void *swiftvim_call_impl(void *pFunc, void *arg1, void *arg2) {
@@ -87,19 +122,24 @@ void *swiftvim_call_impl(void *pFunc, void *arg1, void *arg2) {
             PyTuple_SetItem(pArgs, 1, arg2);
         }
         PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
-        Py_DECREF(pArgs);
         if (pValue != NULL) {
             outValue = pValue;
         } else {
-            PyErr_Print();
-            fprintf(stderr,"swiftvim error: call failed\n");
-            return outValue;
+            print_basic_error_desc();
+            PyObject *funcObj = PyObject_Repr(pFunc);
+            PyObject *arg1Obj = PyObject_Repr(arg1);
+            PyObject *arg2Obj = PyObject_Repr(arg2);
+            fprintf(plugin_error_f(),
+                    "swiftvim error: call failed %s %s %s \n",
+                    SPyString_AsString(funcObj),
+                    SPyString_AsString(arg1Obj),
+                    SPyString_AsString(arg2Obj));
         }
+        Py_DECREF(pArgs);
     } else {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
-        fprintf(stderr, "swiftvim error: cannot find function \"(some)\"\n");
+        print_basic_error_desc();
+        PyObject *funcObj = PyObject_Repr(pFunc);
+        fprintf(plugin_error_f(), "swiftvim error: cannot find function \"(%s)\"\n", SPyString_AsString(funcObj));
     }
 
     return outValue;
@@ -115,20 +155,35 @@ void *swiftvim_eval(const char *eval) {
 
 // TODO: Do these need GIL locks?
 void *swiftvim_decref(void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    if (value == NULL) {
+        PyGILState_Release(gstate);
+        return NULL;
+    }
+
     Py_DECREF(value);
-    return value;
+    PyGILState_Release(gstate);
+    return NULL;
 }
 
 void *swiftvim_incref(void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    if (value == NULL) {
+        PyGILState_Release(gstate);
+        return NULL;
+    }
+
     Py_INCREF(value);
-    return value;
+    PyGILState_Release(gstate);
+    return NULL;
 }
 
 const char *swiftvim_asstring(void *value) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
     if (value == NULL) {
+        PyGILState_Release(gstate);
         return "";
     }
-    PyGILState_STATE gstate = PyGILState_Ensure();
     const char *v = SPyString_AsString(value);
     PyGILState_Release(gstate);
     return v;
@@ -237,14 +292,17 @@ void swiftvim_initialize() {
         PyEval_InitThreads();
     }
 
+// FIXME: Move this to the Makefile or something 
 #ifdef SPMVIM_LOADSTUB_RUNTIME
     // For unit tests, we fake out the vim module
     // to make the tests as pure as possible.
     // Assume that tests are running from the source root
     // We could do something better.
     char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) == NULL)
-        fprintf(stderr, "GarbPWD");
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        fprintf(stderr, "can't load testing directory");
+        exit(1);
+    }
     strcat(cwd, "/Tests/VimInterfaceTests/MockVimRuntime/");
     fprintf(stderr, "Adding test import path: %s \n", cwd);
     PyObject* sysPath = PySys_GetObject((char*)"path");
@@ -255,6 +313,8 @@ void swiftvim_initialize() {
 }
 
 void swiftvim_finalize() {
+    PyGILState_STATE gstate = PyGILState_Ensure();
     Py_Finalize();
+    PyGILState_Release(gstate);
 }
 

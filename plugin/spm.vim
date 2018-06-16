@@ -4,6 +4,7 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+" Setup default Symbols
 let g:icm_error_symbol =
       \ get( g:, 'icm_error_symbol',
       \ get( g:, 'syntastic_error_symbol', '>>' ) )
@@ -27,15 +28,10 @@ let s:python_command = s:using_python3 ? "py3 " : "py "
 
 let s:path = fnamemodify(expand('<sfile>:p:h'), ':h')
 
-" Setup some autocmds
-autocmd BufWritePost * call s:OnBufWritePost()
+" autocmds
 
-" FIXME: add this to swift
-" autocmd QuitPre      * call s:Pyeval("server.Stop()")
-"
-" TODO:
-" autocmd CursorMoved      * call s:Pyeval("swiftvim.event(0, 'CursorMoved')")
-autocmd CursorMoved      * call s:Pyeval("diag_ui.OnCursorMoved()")
+" Show a message when the user moves
+autocmd CursorMoved * call s:Pyeval("swiftvim.event(1002, '')")
 
 " Run some python
 function! s:Pyeval( eval_string )
@@ -58,26 +54,23 @@ plugin_dir  = vim.eval('s:path')
 sys.path.insert(0, os.path.join(plugin_dir, '.build'))
 import swiftvim
 swiftvim.load()
-# Setup Legacy diag ui
-sys.path.insert(0, os.path.join(plugin_dir, 'plugin_python'))
-from diagnostic_interface import DiagnosticInterface
-diag_ui = DiagnosticInterface()
+
 vim.command('return 1')
 EOF
 endfunction
 
-function! s:OnCursorMoved()
-endfunction
+" Wake up the runloop 
+fun s:runloop_timer(timer)
+    call s:Pyeval("swiftvim.event(2, '')")
+endf
 
-function! s:OnBufWritePost()
-endfunction
+let timer = timer_start(100, function('s:runloop_timer'), {'repeat':-1})
 
 if s:SetUpPython() != 1
   echom "Setting up python failed..." . s:path
 endif
 
-" EditorService Helpers
-
+" UI Helpers:
 fun spm#showerrfile(file)
     echom 'Build updated. results @ ' . a:file
     set errorformat=
@@ -92,11 +85,11 @@ fun spm#showerrfile(file)
 			\%f:%l:\ fatal\ error:\ %m,
 			\%f:%l:\ warning:\ %m
     execute "cgetfile " . a:file
-    call s:Pyeval("diag_ui.UpdateBuildState('" . a:file ."')")
 endf
 
 fun spm#showlogs()
-    call s:Pyeval("server.PrintLogs()")
+    " TODO: Add log showing to SPMVim
+    " call s:Pyeval("server.PrintLogs()")
 endf
 
 " This is basic vim plugin boilerplate
