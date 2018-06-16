@@ -2,6 +2,12 @@ import VimCore
 import Foundation
 import Vim
 
+public func GetPluginDir() -> String {
+    // TODO: Remove this
+    let f = String(#file).components(separatedBy: "/")
+    return f[0..<(f.count - 3)].joined(separator: "/")
+}
+
 class SPMPlugin: VimPlugin {
     let rpc: RPCRunner
 

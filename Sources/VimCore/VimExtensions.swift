@@ -19,42 +19,38 @@ extension String: VimScriptConvertible {
 }
 
 extension Vim {
-
-}
-
-public struct VimSupport {
     public static func escapeForVim(_ value: String) -> String {
-        return toUnicode(value).replacingOccurrences(of: "'", with: "''")
-    }
-
-    public static func toUnicode(_ value: String) -> String {
-        return value
+        return value.replacingOccurrences(of: "'", with: "''")
     }
 
     /// Mark - Eval Helpers
-    public static func variableExists(_ variable: String) -> Bool {
-        return getBoolValue("exists('\(escapeForVim(variable))'")
+    public static func exists(variable: String) -> Bool {
+        return get("exists('\(escapeForVim(variable))'")
     }
 
     public static func set(variable: String, value: VimScriptConvertible) {
-        Vim.command("let \(variable) = \(value.toVimScript())")
+        command("let \(variable) = \(value.toVimScript())")
     }
 
-    public static func getVariableValue(_ variable: String) -> VimValue {
-        return Vim.eval(variable)
+    public static func get(variable: String) -> VimValue {
+        return eval(variable)
     }
 
-    public static func getBoolValue(_ variable: String) -> Bool {
-        return Bool((Vim.eval(variable).asInt() ?? 0) != 0)
+    public static func get(_ variable: String) -> VimValue {
+        return eval(variable)
     }
 
-    public static func getIntValue(_ variable: String) -> Int {
-        return Vim.eval(variable).asInt() ?? 0
+    public static func get(_ variable: String) -> Bool {
+        return Bool((eval(variable).asInt() ?? 0) != 0)
+    }
+
+    public static func get(_ variable: String) -> Int {
+        return eval(variable).asInt() ?? 0
     }
 
     /// Returns the 0-based current line and 0-based current column
     public static func currentLineAndColumn() -> (Int, Int) {
-        return Vim.current.window.cursor
+        return current.window.cursor
     } 
 
     // FIXME: this is not 100%
@@ -69,58 +65,58 @@ public struct VimSupport {
     public static func getBufferNumberForFilename(filename: String, openFileIfNeeded: Bool=false) -> Int {
         let path = escapeForVim(realpath(filename))
         let create = openFileIfNeeded == true ? "1" : "0"
-        return getIntValue("bufnr('\(path)', \(create))")
+        return get("bufnr('\(path)', \(create))")
     }
 
     public static func bufferIsVisible(bufferNumber: Int) -> Bool {
         guard bufferNumber > 0 else {
             return false
         }
-        let windowNumber = getIntValue("bufwinnr(\(bufferNumber))")
+        let windowNumber: Int = get("bufwinnr(\(bufferNumber))")
         return windowNumber != -1
     }
 }
 
 // MARK - Diagnostics
 
-extension VimSupport {
-    public static func placeSign(signId: Int, lineNum: Int, bufferNum: Int, isError: Bool=true) {
+extension Vim {
+    public static func placeSign(in bufferNum: Int, signId: Int, lineNum: Int,  isError: Bool=true) {
         var mLineNum = lineNum
         if lineNum < 1 {
             mLineNum = 1
         }
         let signName = isError ? "IcmError" : "IcmWarning"
-        Vim.command(
+        command(
             "sign place \(signId) name=\(signName) line=\(mLineNum) buffer=\(bufferNum)")
     }
 
-    public static func placeDummySign(signId: Int, bufferNum: Int, lineNum: Int) {
+    public static func placeDummySign(in bufferNum: Int, signId: Int, lineNum: Int) {
         if bufferNum < 0 || lineNum < 0 {
             return
         }
-        Vim.command("sign define icm_dummy_sign")
-        Vim.command(
+        command("sign define icm_dummy_sign")
+        command(
             "sign place \(signId) name=icm_dummy_sign line=\(lineNum) buffer=\(bufferNum)")
     }
 
-    public static func unplaceSignInBuffer(bufferNumber: Int, signId: Int) {
-        if bufferNumber < 0 {
-            return
-        }
-        Vim.command(
-            "try | exec 'sign unplace \(signId) buffer=\(bufferNumber)' | catch /E158/ | endtry")
-    }
-
-    public static func unPlaceDummySign(signId: Int, bufferNum: Int) {
+    public static func unplaceSign(in bufferNum: Int, signId: Int) {
         if bufferNum < 0 {
             return
         }
-        Vim.command("try | exec 'sign undefine icm_dummy_sign' | catch /E155/ | endtry")
-        Vim.command("sign unplace \(signId) buffer=\(bufferNum)")
+        command(
+            "try | exec 'sign unplace \(signId) buffer=\(bufferNum)' | catch /E158/ | endtry")
+    }
+
+    public static func unPlaceDummySign(in bufferNum: Int, signId: Int) {
+        if bufferNum < 0 {
+            return
+        }
+        command("try | exec 'sign undefine icm_dummy_sign' | catch /E155/ | endtry")
+        command("sign unplace \(signId) buffer=\(bufferNum)")
     }
 }
 
-extension VimSupport {
+extension Vim {
     /// Highlight a range in the current window starting from
     /// (|lineNum|, |columnNum|) included to (|lineEndNum|, |columnEndNum|)
     /// excluded.
@@ -136,14 +132,14 @@ extension VimSupport {
 
         let (lineNum, columnNum) = lineAndColumnNumbersClamped(lineNum: lineNum, columnNum: columnNum)
         if lineEndNum == nil || columnEndNum == nil {
-            return getIntValue(
+            return get(
                 "matchadd('\(group)', '\\%\(lineNum)l\\%\(columnNum)c')")
         }
         // -1 and then +1 to account for column end not included in the range.
         var (lineEndNum, columnEndNum) = lineAndColumnNumbersClamped(
             lineNum: lineEndNum, columnNum: (columnEndNum ?? 0) - 1)
         columnEndNum += 1
-        return getIntValue(
+        return get(
             "matchadd('\(group)', '%\(lineNum)l%\(columnNum)c_.\\{{-}}%\(lineEndNum)l%\(columnEndNum)c')")
     }
 
@@ -153,7 +149,7 @@ extension VimSupport {
         var newLineNum = lineNum ?? 0
         var newColumnNum = columnNum ?? 0
 
-        let blist = Vim.current.buffer.asList()
+        let blist = current.buffer.asList()
         let maxLine = blist.count
         if lineNum != nil && newLineNum > maxLine {
             newLineNum = maxLine
@@ -175,14 +171,13 @@ extension VimSupport {
         // Displaying a new message while previous ones are still on the status line
         // might lead to a hit-enter prompt or the message appearing without a
         // newline so we do a redraw first.
-        Vim.command("redraw")
+        command("redraw")
 
         if warning {
-            Vim.command("echohl WarningMsg")
+            command("echohl WarningMsg")
         }
-        let message = toUnicode(message)
         if truncate {
-            let vimWidth = getIntValue("&columns")
+            let vimWidth: Int = get("&columns")
 
             var message = message.replacingOccurrences(of: "\n", with:" ")
             // FIXME: char count and truncation
@@ -190,26 +185,26 @@ extension VimSupport {
                 /// message = message[: vimWidth - 4] + "..."
             }
 
-            let oldRuler = getIntValue("&ruler")
-            let oldShowcmd = getIntValue("&showcmd")
-            Vim.command("set noruler noshowcmd")
+            let oldRuler: Int = get("&ruler")
+            let oldShowcmd: Int = get("&showcmd")
+            command("set noruler noshowcmd")
 
-            Vim.command("\(echoCommand) '\(escapeForVim(message))'")
+            command("\(echoCommand) '\(escapeForVim(message))'")
 
             set(variable: "&ruler", value: oldRuler)
             set(variable: "&showcmd", value: oldShowcmd)
         } else {
             for line in message.components(separatedBy: "\n") {
-                Vim.command("\(echoCommand) '\(escapeForVim(line))'")
+                command("\(echoCommand) '\(escapeForVim(line))'")
             }
         }
         if warning {
-            Vim.command("echohl None")
+            command("echohl None")
         }
     }
 
     public static func clearIcmSyntaxMatches() {
-        guard let matches = Vim.eval("getmatches()").asList() else {
+        guard let matches = eval("getmatches()").asList() else {
             return
         }
         // FIXME: Check types
@@ -217,7 +212,7 @@ extension VimSupport {
             if let match = matchValue.asDictionary(),
                 match["group"]?.asString()?.hasPrefix("Icm") == true,
                 let id = match["id"]?.asInt() {
-                Vim.eval("matchdelete(\(id))")
+                eval("matchdelete(\(id))")
             }
         }
     }

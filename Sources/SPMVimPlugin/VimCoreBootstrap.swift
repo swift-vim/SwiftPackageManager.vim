@@ -1,33 +1,16 @@
-// This API should exisit at the plugin level.
-// C functions at the global scope should be namespaced to the plugin name.
+// VimCore Plugin initialization
 import VimCore
-import Vim
 
 // Core bootstrap for the plugin
-@_cdecl("plugin_init")
+@_cdecl("spmvim_plugin_init")
 public func plugin_init(context: UnsafePointer<Int8>) -> Int {
+    // Setup the plugin conforming to <VimPlugin> here
     SetSharedPlugin(SPMPlugin())
     return 0
 }
 
-private var SharedPlugin: VimPlugin?
-
-/// Set the shared plugin
-public func SetSharedPlugin(_ plugin: VimPlugin) {
-    if SharedPlugin != nil {
-        fatalError("Plugin already set")
-    }
-    SharedPlugin = plugin
-}
-
-@_cdecl("plugin_user_event")
+@_cdecl("spmvim_plugin_user_event")
 public func plugin_user_event(event: Int, context: UnsafePointer<Int8>) -> UnsafePointer<Int8>? {
-    // FIXME: Move this somewhere else.
-    // Ideally, this can be installed into Vim dynamically
-    if event == 2 {
-        InternalVimMainTheadCallback()
-    }
-    SharedPlugin?.pluginEvent(event: event,
-        context: String(cString: context))
-    return nil
+    return HandlePluginEvent(event: event, context: context)
 }
+

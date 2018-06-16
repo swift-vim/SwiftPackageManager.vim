@@ -30,7 +30,7 @@ final class DiagnosticInterface: RPCObserver {
     var diagMessageNeedsClearing = false
 
     public func onCursorMoved() {
-        let (line, _) = VimSupport.currentLineAndColumn()
+        let (line, _) = Vim.currentLineAndColumn()
         guard line != previousLineNumber else {
             return
         }
@@ -42,7 +42,7 @@ final class DiagnosticInterface: RPCObserver {
         let bufferNum = Vim.current.buffer.number
         guard let diags = bufferNumberToLineToDiags[bufferNum]?[line],
             let firstDiag = diags.first else {
-                VimSupport.postVimMessage(message: "", warning: false)
+                Vim.postVimMessage(message: "", warning: false)
                 diagMessageNeedsClearing = false
                 return
         }
@@ -53,7 +53,7 @@ final class DiagnosticInterface: RPCObserver {
         } else {
             text = firstDiag.text
         }
-        VimSupport.postVimMessage(message: text, warning: false, truncate: true)
+        Vim.postVimMessage(message: text, warning: false, truncate: true)
         diagMessageNeedsClearing = true
     }
 
@@ -65,7 +65,7 @@ final class DiagnosticInterface: RPCObserver {
         // 4) Open the log
         diags.forEach {
             diag -> Void in
-            let bufferNum = VimSupport.getBufferNumberForFilename(filename: diag.location.filepath)
+            let bufferNum = Vim.getBufferNumberForFilename(filename: diag.location.filepath)
             var bufferInfo: [Int: [Diagnostic]]
             bufferInfo = bufferNumberToLineToDiags[bufferNum] ?? [:]
             var diags = bufferInfo[diag.location.lineNum] ?? []
@@ -92,9 +92,8 @@ func UpdateSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags: Buffer
     let (newSigns, keptSigns, nextSignId) = GetKeptAndNewSigns(placedSigns: placedSigns, bufferNumberToLineToDiags: bufferNumberToLineToDiags, nextSignId: nextSignId)
     let needsDummy = keptSigns.count == 0 && newSigns.count > 0
     if needsDummy {
-       VimSupport.placeDummySign(signId: nextSignId + 1,
-          bufferNum: Vim.current.buffer.number,
-          lineNum: newSigns[0].line)
+       Vim.placeDummySign(in: Vim.current.buffer.number, signId:
+          nextSignId + 1, lineNum: newSigns[0].line)
     }
 
     // We use incremental placement, so signs that already placed on the correct
@@ -106,8 +105,8 @@ func UpdateSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags: Buffer
     UnplaceObseleteSigns(keptSigns: keptSigns,
          placedSigns: placedSigns)
     if needsDummy {
-        VimSupport.unPlaceDummySign(signId: nextSignId + 1,
-            bufferNum: Vim.current.buffer.number)
+        Vim.unPlaceDummySign(in: Vim.current.buffer.number,
+            signId: nextSignId + 1)
     }
     return (newPlaced + keptSigns, nextSignId)
 }
@@ -115,7 +114,7 @@ func UpdateSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags: Buffer
 /// Get signs for the visibile buffer
 func GetKeptAndNewSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags: BufferInfo, nextSignId: Int) -> ([SignPlacement], [SignPlacement], Int) {
     let visibleBuffers = Array(bufferNumberToLineToDiags.keys).filter {
-        return VimSupport.bufferIsVisible(bufferNumber: $0)
+        return Vim.bufferIsVisible(bufferNumber: $0)
     }
     var oNextSignId = nextSignId
     var keptSings: Set<SignPlacement> = Set()
@@ -148,8 +147,8 @@ func PlaceNewSigns(keptSigns: [SignPlacement], newSigns: [SignPlacement]) -> [Si
         if keptSigns.contains(sign) {
             return nil
         }
-        VimSupport.placeSign(signId: sign.id, lineNum: sign.line, bufferNum:
-            sign.buffer, isError: sign.isError)
+        Vim.placeSign(in: sign.buffer, signId: sign.id, lineNum:
+            sign.line, isError: sign.isError)
         return sign
     }
 }
@@ -160,12 +159,12 @@ func UnplaceObseleteSigns(keptSigns: [SignPlacement], placedSigns: [SignPlacemen
         if keptSigns.contains(sign) {
             return
         }
-        VimSupport.unplaceSignInBuffer(bufferNumber: sign.buffer, signId: sign.id)
+        Vim.unplaceSign(in: sign.buffer, signId: sign.id)
     }
 }
 
 func UpdateSquiggles(bufferNumberToLineToDiags: BufferInfo) {
-    VimSupport.clearIcmSyntaxMatches()
+    Vim.clearIcmSyntaxMatches()
     guard let lineDiags = bufferNumberToLineToDiags[Vim.current.buffer.number] else {
         return
     }
@@ -175,7 +174,7 @@ func UpdateSquiggles(bufferNumberToLineToDiags: BufferInfo) {
         let (_, diags) = i
         diags.forEach {
             diag in
-            _ = VimSupport.addDiagnosticSyntaxMatch(lineNum:
+            _ = Vim.addDiagnosticSyntaxMatch(lineNum:
                 diag.location.lineNum, columnNum: diag.location.columnNum)
             // TODO: Add the ability to support location extents
         }

@@ -1,8 +1,6 @@
 import Foundation
 
-// Basic Dispatch Timer for Vim
-// Originally inspired by this
-// https://medium.com/@danielgalasko/a-background-repeating-timer-in-swift-412cecfd2ef9
+// Dispatch Timer for Vim
 public final class VimTimer {
     let timeInterval: TimeInterval
     private var eventHandler: (() -> Void)?
