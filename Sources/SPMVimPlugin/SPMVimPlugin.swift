@@ -1,7 +1,6 @@
-import VimKit
 import Foundation
-import Vim
-import VimAsync
+import SPMVimPluginVim
+import SPMVimPluginVimAsync
 
 public func GetPluginDir() -> String {
     // TODO: Remove this
@@ -9,14 +8,20 @@ public func GetPluginDir() -> String {
     return f[0..<(f.count - 3)].joined(separator: "/")
 }
 
-public final class SPMPlugin: VimPlugin {
+/// Module instance
+public final class SPMVimPlugin {
     let rpc: RPCRunner
 
     let statusTimer: VimTimer
 
+    /// EditorService runs in a background process and
+    /// pings the RPC service when necessary.
     let editorService: VimProcess
 
     let editorSericeTask: VimTask<Void>
+
+    /// DiagnosticInterface listens to the RPC service for
+    /// incoming diagnostics
     let diagUI: DiagnosticInterface
 
     init() {
@@ -37,7 +42,7 @@ public final class SPMPlugin: VimPlugin {
           "editor",
           authToken,
           "--port", String(rpcPort),
-          "--path", Vim.eval("expand('%:p')")?.asString() ?? ""
+          "--path", (try? Vim.eval("expand('%:p')"))?.asString() ?? ""
         ]
         let editorService = VimProcess.with(path: binPath, args: args)
         let statusTimer = VimTimer(timeInterval: 1.0) {
@@ -58,24 +63,6 @@ public final class SPMPlugin: VimPlugin {
         statusTimer.resume()
     }
 
-    // MARK - VimPlugin
-
-    enum SPMVimEvent: Int {
-        case auQuitPre = 1001
-        case auCursorMoved = 1002
-    }
-
-    public func event(event id: Int, context: String) -> String? {
-        guard let spmEvent = SPMVimEvent(rawValue: id) else {
-            return nil
-        }
-        switch spmEvent {
-        case .auQuitPre:
-            editorService.process.terminate()
-        case .auCursorMoved:
-            diagUI.onCursorMoved()
-        }
-        return nil
-    }
+    static let shared = SPMVimPlugin()
 }
 

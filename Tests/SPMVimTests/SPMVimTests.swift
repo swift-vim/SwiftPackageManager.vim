@@ -1,8 +1,7 @@
 import XCTest
-@testable import EditorService
-import VimKit
 import SPMVimPlugin
 import SPMProtocol
+import EditorService
 
 class SPMVimTests: XCTestCase {
     static var allTests = [

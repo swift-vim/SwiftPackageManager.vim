@@ -7,15 +7,17 @@ let package = Package(
     name: "SPMVim",
 
     products: [
-        // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
             name: "SPMVimPlugin",
             type: .dynamic,
             targets: ["SPMVimPlugin"]),
+        .library(
+            name: "EditorService",
+            type: .dynamic,
+            targets: ["EditorService"]),
     ],
 
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/Carthage/Commandant",
             from: "0.13.0"),
         .package(url: "https://github.com/jerrymarino/SwiftCompilationDatabase.git",
@@ -25,25 +27,31 @@ let package = Package(
         .package(url: "https://github.com/swift-vim/http",
              .revision("671be3123752a8eebd18dccb9321e1dfcae8f9c0")),
         .package(url: "https://github.com/swift-vim/SwiftForVim.git",
-             .revision("15f248e31501378bf5a56a23851cd670b860d646"))
+             .revision("d8218c47c652d38721795b29c2b29da3c8f3cb37"))
     ],
 
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(name: "EditorService",
             dependencies: ["LogParser", "SKQueue", "SPMProtocol"]),
+
         .target(
             name: "SPMVim",
             dependencies: ["Commandant", "LogParser", "EditorService"]),
+
         .target(
             name: "SPMVimPlugin",
-            dependencies: [ "VimAsync", "HTTP", "EditorService", "SPMProtocol"]),
+            dependencies: [ "HTTP", "EditorService", "SPMProtocol"]),
 
         // Client <-> Server messages
         .target(name: "SPMProtocol"),
+
         .testTarget(
             name: "SPMVimTests",
-            dependencies: ["EditorService", "VimKit", "SPMVimPlugin"]),
+            dependencies: ["SPMVimPlugin"]),
+
+        /// SwiftForVim boilerplate
+        .target(
+            name: "StubVimImport",
+            dependencies: ["VimAsync", "Vim"]),
     ]
 )

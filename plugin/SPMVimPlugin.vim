@@ -55,8 +55,8 @@ plugin_dir  = vim.eval('s:path')
 
 # Bootstrap Swift Plugin
 sys.path.insert(0, os.path.join(plugin_dir, '.build'))
-import spmvim
-spmvim.load()
+import SPMVimPlugin
+SPMVimPlugin.load()
 
 vim.command('return 1')
 EOF
@@ -68,7 +68,7 @@ endif
 
 " Internal, VimRunLoop integration
 fun s:SwiftVimRunLoopTimer(timer)
-    call s:SwiftVimEval("spmvim.runloop_callback()")
+    call s:SwiftVimEval("SPMVimPlugin.runloop_callback()")
 endf
 
 let s:SwiftVimRunLoopTimer = timer_start(100, function('s:SwiftVimRunLoopTimer'), {'repeat':-1})
@@ -89,11 +89,10 @@ let g:icm_warning_symbol =
 " autocmds
 
 " Show a message when the user moves
-autocmd CursorMoved * call s:SwiftVimEval("spmvim.event(1002, '')")
-
+autocmd CursorMoved * call s:SwiftVimEval("SPMVimPlugin.invoke('autocmd.CursorMoved')")
 
 " UI Helpers:
-fun spm#showerrfile(file)
+fun SPMVimPlugin#showerrfile(file)
     echom 'Build updated. results @ ' . a:file
     set errorformat=
             \%f:%l:%c:{%*[^}]}:\ error:\ %m,
@@ -109,7 +108,7 @@ fun spm#showerrfile(file)
     execute "cgetfile " . a:file
 endf
 
-fun spm#showlogs()
+fun SPMVimPlugin#showlogs()
     " TODO: Add log showing to SPMVim
     " call s:SwiftVimEval("server.PrintLogs()")
 endf

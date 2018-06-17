@@ -1,7 +1,6 @@
-import VimKit
 import EditorService
 import SPMProtocol
-import Vim
+import SPMVimPluginVim
 
 struct SignPlacement: Hashable {
     let id: Int
@@ -29,7 +28,15 @@ final class DiagnosticInterface: RPCObserver {
     var bufferNumberToLineToDiags: BufferInfo  = [:]
     var diagMessageNeedsClearing = false
 
-    public func onCursorMoved() {
+    public init() {
+        /// Register global module callbacks.
+        VimPlugin.setCallable("autocmd.CursorMoved") {
+            _ in
+            self.onCursorMoved()
+        }
+    }
+
+    private func onCursorMoved() {
         let (line, _) = Vim.currentLineAndColumn()
         guard line != previousLineNumber else {
             return
@@ -57,7 +64,7 @@ final class DiagnosticInterface: RPCObserver {
         diagMessageNeedsClearing = true
     }
 
-    func update(diagnostics diags: [Diagnostic]) {
+    private func update(diagnostics diags: [Diagnostic]) {
         bufferNumberToLineToDiags = [:]
         // 1) Update the listing of diags in the buffer
         // 2) Update the signs
@@ -80,10 +87,12 @@ final class DiagnosticInterface: RPCObserver {
         UpdateSquiggles(bufferNumberToLineToDiags: bufferNumberToLineToDiags)
     }
 
+    // MARK - RPCObserver
+
     public func didGet(message: DiagnosticMessage) {
         update(diagnostics: message.diagnostics)
         if let path = message.originFile {
-            Vim.command("call spm#showerrfile('\(path)')")
+            Vim.commandCatching("call SPMVimPlugin#showerrfile('\(path)')")
         }
     }
 }

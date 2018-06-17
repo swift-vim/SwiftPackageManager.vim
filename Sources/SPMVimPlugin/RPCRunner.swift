@@ -1,10 +1,9 @@
 import Foundation
 import HTTP
-import VimKit
 import EditorService
 import SPMProtocol
-import Vim
-import VimAsync
+import SPMVimPluginVim
+import SPMVimPluginVimAsync
 
 struct VimLogger {
     let fileHandle: FileHandle

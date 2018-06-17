@@ -1,14 +1,20 @@
-import VimKit
-import Vim
+import SPMVimPluginVim
 
 extension Vim {
+    /// In several cases, there is nothing actionable
+    public static func commandCatching(_ cmd: String) {
+        do {
+            try command(cmd)
+        } catch { }
+    }
+
     public static func placeSign(in bufferNum: Int, signId: Int, lineNum: Int,  isError: Bool=true) {
         var mLineNum = lineNum
         if lineNum < 1 {
             mLineNum = 1
         }
         let signName = isError ? "IcmError" : "IcmWarning"
-        command(
+        commandCatching(
             "sign place \(signId) name=\(signName) line=\(mLineNum) buffer=\(bufferNum)")
     }
 
@@ -16,8 +22,8 @@ extension Vim {
         if bufferNum < 0 || lineNum < 0 {
             return
         }
-        command("sign define icm_dummy_sign")
-        command(
+        commandCatching("sign define icm_dummy_sign")
+        commandCatching(
             "sign place \(signId) name=icm_dummy_sign line=\(lineNum) buffer=\(bufferNum)")
     }
 
@@ -25,7 +31,7 @@ extension Vim {
         if bufferNum < 0 {
             return
         }
-        command(
+        commandCatching(
             "try | exec 'sign unplace \(signId) buffer=\(bufferNum)' | catch /E158/ | endtry")
     }
 
@@ -33,8 +39,8 @@ extension Vim {
         if bufferNum < 0 {
             return
         }
-        command("try | exec 'sign undefine icm_dummy_sign' | catch /E155/ | endtry")
-        command("sign unplace \(signId) buffer=\(bufferNum)")
+        commandCatching("try | exec 'sign undefine icm_dummy_sign' | catch /E155/ | endtry")
+        commandCatching("sign unplace \(signId) buffer=\(bufferNum)")
     }
 }
 
@@ -93,10 +99,10 @@ extension Vim {
         // Displaying a new message while previous ones are still on the status line
         // might lead to a hit-enter prompt or the message appearing without a
         // newline so we do a redraw first.
-        command("redraw")
+        commandCatching("redraw")
 
         if warning {
-            command("echohl WarningMsg")
+            commandCatching("echohl WarningMsg")
         }
         if truncate {
             let vimWidth: Int = get("&columns")
@@ -109,24 +115,24 @@ extension Vim {
 
             let oldRuler: Int = get("&ruler")
             let oldShowcmd: Int = get("&showcmd")
-            command("set noruler noshowcmd")
+            commandCatching("set noruler noshowcmd")
 
-            command("\(echoCommand) '\(escapeForVim(message))'")
+            commandCatching("\(echoCommand) '\(escapeForVim(message))'")
 
             set(variable: "&ruler", value: oldRuler)
             set(variable: "&showcmd", value: oldShowcmd)
         } else {
             for line in message.components(separatedBy: "\n") {
-                command("\(echoCommand) '\(escapeForVim(line))'")
+                commandCatching("\(echoCommand) '\(escapeForVim(line))'")
             }
         }
         if warning {
-            command("echohl None")
+            commandCatching("echohl None")
         }
     }
 
     public static func clearIcmSyntaxMatches() {
-        guard let matches = eval("getmatches()")?.asList() else {
+        guard let matches = (try? eval("getmatches()"))?.asList() else {
             return
         }
         // FIXME: Check types
@@ -134,7 +140,7 @@ extension Vim {
             if let match = matchValue.asDictionary(),
                 match["group"]?.asString()?.hasPrefix("Icm") == true,
                 let id = match["id"]?.asInt() {
-                eval("matchdelete(\(id))")
+                _ = try? eval("matchdelete(\(id))")
             }
         }
     }

@@ -1,36 +1,119 @@
 SHELL=bash
 
-PLUGIN_NAME=spmvim
+PLUGIN_NAME=SPMVimPlugin
 PRODUCT=spm-vim
 LAST_LOG=.build/last_build.log
 PWD=$(shell pwd)
+TRIPPLE=x86_64-apple-macosx10.12
+CONFIG=
+BUILD_DIR=.build/debug
+EXTRA_OPTS=
 
 default: debug
 
 all: CONFIG=debug
 
-# FIXME: the .dylib is not being built in release..
-.PHONY: release
-release: CONFIG=release
-release: cli .build/spmvim.so
-
 .PHONY: debug
 debug: CONFIG=debug
-debug: cli .build/spmvim.so
+debug: cli plugin_so
 
 .PHONY: plugin
 plugin: CONFIG=debug
-plugin: .build/spmvim.so
+plugin: plugin_so
 
-# Dynamically find python vars
-# Note, that this is OSX specific
-# We will pass this directly to the linker command line
-# Whatever dylib was used i.e. Py.framework/SOMEPYTHON
+
+.PHONY: release
+release: CONFIG=release
+release: cli plugin_so
+
+# Begin SwiftForVim ( note this is somewhat changed )
+
+BASE_OPTS=-Xcc -I$(PYTHON_INCLUDE) \
+	-Xcc -DVIM_PLUGIN_NAME=$(PLUGIN_NAME) \
+	-Xlinker $(PYTHON_LINKED_LIB) \
+	-Xcc -fvisibility=hidden \
+	-Xlinker -undefined -Xlinker dynamic_lookup \
+	-Xlinker -all_load
+
+# Build namespaced versions of Vim and VimAsync libs.
+# The modules have a prefix of the plugin name, to avoid conflicts
+# when the code is linked into the Vim process.
+# The module is imported as "import $(PLUGIN_NAME)Vim"
+# FIXME: Consider other ways to do this that work transitively
+
+$(BUILD_DIR)/libVim.dylib: SWIFT_OPTS=--product Vim \
+	-Xswiftc -module-name=$(PLUGIN_NAME)Vim \
+	-Xswiftc -module-link-name=$(PLUGIN_NAME)Vim \
+	$(BASE_OPTS)
+$(BUILD_DIR)/libVim.dylib:
+$(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib: $(BUILD_DIR)/libVim.dylib
+	ditto $(BUILD_DIR)/Vim.swiftmodule \
+		$(BUILD_DIR)/$(PLUGIN_NAME)Vim.swiftmodule
+	ditto $(BUILD_DIR)/Vim.swiftdoc \
+		$(BUILD_DIR)/$(PLUGIN_NAME)Vim.swiftdoc
+	ditto $(BUILD_DIR)/libVim.dylib \
+		$(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib
+
+$(BUILD_DIR)/libVimAsync.dylib: SWIFT_OPTS=--product VimAsync  \
+	-Xswiftc -module-name=$(PLUGIN_NAME)VimAsync \
+	-Xswiftc -module-link-name=$(PLUGIN_NAME)VimAsync \
+	$(BASE_OPTS)
+$(BUILD_DIR)/libVimAsync.dylib:
+$(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib:
+	ditto $(BUILD_DIR)/VimAsync.swiftmodule \
+		$(BUILD_DIR)/$(PLUGIN_NAME)VimAsync.swiftmodule
+	ditto $(BUILD_DIR)/VimAsync.swiftdoc \
+		$(BUILD_DIR)/$(PLUGIN_NAME)VimAsync.swiftdoc
+	ditto $(BUILD_DIR)/libVimAsync.dylib \
+		$(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib
+
+# Main plugin lib
+.PHONY: plugin_lib
+plugin_lib: SWIFT_OPTS=--product $(PLUGIN_NAME) \
+		$(BASE_OPTS) 
+plugin_lib: $(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib $(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib
+
+# Build the .so, which Vim dynamically links.
+.PHONY: plugin_so
+plugin_so: plugin_lib  
+	@clang -g \
+		-Xlinker $(PYTHON_LINKED_LIB) \
+		-Xlinker $(BUILD_DIR)/lib$(PLUGIN_NAME).dylib \
+		-Xlinker $(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib \
+		-Xlinker $(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib \
+		-shared -o .build/$(PLUGIN_NAME).so
+
+# Build for the python dylib vim links
 .PHONY: py_vars
 py_vars:
-	@source Utils/make_lib.sh; python_info
-	$(eval PYTHON_LINKED_LIB=$(shell source Utils/make_lib.sh; linked_python))
-	$(eval PYTHON_INCLUDE=$(shell source Utils/make_lib.sh; python_inc_dir))
+	@source VimUtils/make_lib.sh; python_info
+	$(eval PYTHON_LINKED_LIB=$(shell source VimUtils/make_lib.sh; linked_python))
+	$(eval PYTHON_INCLUDE=$(shell source VimUtils/make_lib.sh; python_inc_dir))
+
+# SPM Build
+$(BUILD_DIR)/libVim.dylib $(BUILD_DIR)/libVimAsync.dylib plugin_lib test_b: py_vars
+	@echo "Building.."
+	@mkdir -p .build
+	swift build -c $(CONFIG) \
+	   	$(BASE_OPTS) $(SWIFT_OPTS) $(EXTRA_OPTS) \
+	  	-Xswiftc -target -Xswiftc $(TRIPPLE) \
+	   	| tee $(LAST_LOG)
+
+# Mark - Internal Utils:
+
+# Overriding Python:
+# USE_PYTHON=/usr/local/Cellar/python/3.6.4_4/Frameworks/Python.framework/Versions/3.6/Python make test 
+.PHONY: test
+test: CONFIG=debug
+test: debug
+	@echo "Testing.."
+	@mkdir -p .build
+	@swift build --target SPMVimTests \
+	   	$(BASE_OPTS) $(SWIFT_OPTS) $(EXTRA_OPTS) \
+	  	-Xswiftc -target -Xswiftc $(TRIPPLE)
+	@swift test --skip-build | tee $(LAST_LOG)
+
+# End SwiftForVim
 
 .PHONY: cli
 cli: SWIFT_OPTS=--product SPMVim
@@ -56,23 +139,6 @@ install_cli: cli
 	ln -s $(PWD)/.build/$(CONFIG)/$(PRODUCT) /usr/local/bin/$(PRODUCT)
 
 
-# Running tests with custom versions of Python
-# USE_PYTHON=/usr/local/Cellar/python/3.6.4_4/Frameworks/Python.framework/Versions/3.6/Python make test 
-.PHONY: test
-test_b: SWIFT_OPTS= \
-	-Xcc -DSPMVIM_LOADSTUB_RUNTIME \
-	-Xcc -DVIM_PLUGIN_NAME=$(PLUGIN_NAME) \
-	-Xcc -I$(PYTHON_INCLUDE) \
-	-Xlinker $(PYTHON_LINKED_LIB) \
-	--build-tests
-test_b: build_impl
-test: CONFIG=debug
-test: py_vars test_b
-	@echo "Testing.."
-	@mkdir -p .build/$(CONFIG)
-	@echo "" > $(LAST_LOG)
-	@swift test --skip-build -c $(CONFIG) $(SWIFT_OPTS) | tee -a $(LAST_LOG)
-
 # Running: Pipe the parseable output example to the program
 .PHONY: run
 run: CONFIG=debug
@@ -89,26 +155,10 @@ clean:
 	rm -rf .build/debug/*
 	rm -rf .build/release/*
 
-# This is the core python module
-.PHONY: pluginlib
-pluginlib:
-pluginlib: SWIFT_OPTS=--product SPMVimPlugin  \
-	-Xcc -DVIM_PLUGIN_NAME=$(PLUGIN_NAME) \
-	-Xcc -I$(PYTHON_INCLUDE) \
-    -Xcc -fvisibility=hidden \
-	-Xlinker $(PYTHON_LINKED_LIB)
-pluginlib: build_impl
-
-# Build the shared object for Vim
-.build/spmvim.so: pluginlib
-	@clang -g \
-		-Xlinker $(PYTHON_LINKED_LIB) \
-		-Xlinker $(PWD)/.build/$(CONFIG)/libSPMVimPlugin.dylib \
-		-shared -o .build/spmvim.so
-
 .PHONY: run_py
 run_py: .build/spmvim.so
 	python Utils/main.py
+
 
 # Build compile_commands.json
 # Unfortunately, we need to clean.

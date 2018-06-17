@@ -7,10 +7,29 @@ Compile Swift Module 'LogParser' (1 sources)
 Compile Swift Module 'SwiftCompilationDatabase' (1 sources)
 Compile Swift Module 'EditorService' (1 sources)
 Compile Swift Module 'Vim' (4 sources)
-/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/Vim/VimValue.swift:3:1: error: expressions are not allowed at the top level
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
 a
 ^
-/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/Vim/VimValue.swift:3:1: error: use of unresolved identifier 'a'
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: use of unresolved identifier 'a'
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/RPCRunner.swift:55:61: warning: conditional downcast from 'NSData?' to 'Data' is a bridging conversion; did you mean to use 'as'?
+        guard let data: Data = (((dData as Any) as? NSData) as? Data) else {
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^~~ ~~~~
+                                                            as      ?
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
+a
+^
+/Users/jerrymarino/Projects/SwiftPackageManager.vim/Sources/SPMVimPlugin/DiagnosticInterface.swift:5:1: error: expressions are not allowed at the top level
 a
 ^
 
