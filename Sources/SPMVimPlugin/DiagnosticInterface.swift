@@ -1,4 +1,4 @@
-import VimCore
+import VimKit
 import EditorService
 import SPMProtocol
 import Vim
@@ -65,7 +65,7 @@ final class DiagnosticInterface: RPCObserver {
         // 4) Open the log
         diags.forEach {
             diag -> Void in
-            let bufferNum = Vim.getBufferNumberForFilename(filename: diag.location.filepath)
+            let bufferNum = Vim.getBufferNumber(for: diag.location.filepath)
             var bufferInfo: [Int: [Diagnostic]]
             bufferInfo = bufferNumberToLineToDiags[bufferNum] ?? [:]
             var diags = bufferInfo[diag.location.lineNum] ?? []

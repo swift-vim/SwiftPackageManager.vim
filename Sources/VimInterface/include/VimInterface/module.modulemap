@@ -1,4 +1,0 @@
-module VimInterface {
-    header "spmvim.h"
-    export *
-}

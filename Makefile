@@ -1,5 +1,6 @@
 SHELL=bash
 
+PLUGIN_NAME=spmvim
 PRODUCT=spm-vim
 LAST_LOG=.build/last_build.log
 PWD=$(shell pwd)
@@ -33,17 +34,19 @@ py_vars:
 
 .PHONY: cli
 cli: SWIFT_OPTS=--product SPMVim
-cli: build-impl
+cli: build_impl
 	@mv .build/$(CONFIG)/SPMVim .build/$(CONFIG)/$(PRODUCT) || true
 
 # SPM Build
-.PHONY: build-impl
+.PHONY: build_impl
 # Careful: assume we need to depend on this here
-build-impl: py_vars
-build-impl:
+build_impl: py_vars
+build_impl:
 	@echo "Building.."
 	@mkdir -p .build/$(CONFIG)
-	@swift build -c $(CONFIG) $(SWIFT_OPTS)  -Xswiftc "-target"  -Xswiftc "x86_64-apple-macosx10.12" | tee $(LAST_LOG)
+	@swift build -c $(CONFIG) $(SWIFT_OPTS) \
+	  	-Xswiftc "-target"  -Xswiftc "x86_64-apple-macosx10.12" \
+	   	| tee $(LAST_LOG)
 
 # Build and install the command line program
 .PHONY: install_cli
@@ -58,10 +61,11 @@ install_cli: cli
 .PHONY: test
 test_b: SWIFT_OPTS= \
 	-Xcc -DSPMVIM_LOADSTUB_RUNTIME \
+	-Xcc -DVIM_PLUGIN_NAME=$(PLUGIN_NAME) \
 	-Xcc -I$(PYTHON_INCLUDE) \
 	-Xlinker $(PYTHON_LINKED_LIB) \
 	--build-tests
-test_b: build-impl
+test_b: build_impl
 test: CONFIG=debug
 test: py_vars test_b
 	@echo "Testing.."
@@ -72,12 +76,12 @@ test: py_vars test_b
 # Running: Pipe the parseable output example to the program
 .PHONY: run
 run: CONFIG=debug
-run: build-impl
+run: build_impl
 	cat Examples/parseable-output-example.txt | .build/$(CONFIG)/$(PRODUCT) log
 
 .PHONY: run_compile_commands
 run_compile_commands: CONFIG=debug
-run_compile_commands: build-impl
+run_compile_commands: build_impl
 	.build/$(CONFIG)/$(PRODUCT) compile_commands Examples/parseable-output-example.txt 
 
 .PHONY: clean
@@ -89,10 +93,11 @@ clean:
 .PHONY: pluginlib
 pluginlib:
 pluginlib: SWIFT_OPTS=--product SPMVimPlugin  \
+	-Xcc -DVIM_PLUGIN_NAME=$(PLUGIN_NAME) \
 	-Xcc -I$(PYTHON_INCLUDE) \
     -Xcc -fvisibility=hidden \
 	-Xlinker $(PYTHON_LINKED_LIB)
-pluginlib: build-impl
+pluginlib: build_impl
 
 # Build the shared object for Vim
 .build/spmvim.so: pluginlib
@@ -113,7 +118,7 @@ compile_commands.json: SWIFT_OPTS=-Xswiftc -parseable-output \
 	-Xcc -I$(PYTHON_INCLUDE) \
 	-Xlinker $(PYTHON_LINKED_LIB) 
 compile_commands.json: CONFIG=debug
-compile_commands.json: clean build-impl
+compile_commands.json: clean build_impl
 	cat $(LAST_LOG) | /usr/local/bin/$(PRODUCT) compile_commands
 
 .PHONY: reset

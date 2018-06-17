@@ -1,6 +1,7 @@
-import VimCore
+import VimKit
 import Foundation
 import Vim
+import VimAsync
 
 public func GetPluginDir() -> String {
     // TODO: Remove this
@@ -8,7 +9,7 @@ public func GetPluginDir() -> String {
     return f[0..<(f.count - 3)].joined(separator: "/")
 }
 
-class SPMPlugin: VimPlugin {
+public final class SPMPlugin: VimPlugin {
     let rpc: RPCRunner
 
     let statusTimer: VimTimer
@@ -36,7 +37,7 @@ class SPMPlugin: VimPlugin {
           "editor",
           authToken,
           "--port", String(rpcPort),
-          "--path", Vim.eval("expand('%:p')").asString() ?? ""
+          "--path", Vim.eval("expand('%:p')")?.asString() ?? ""
         ]
         let editorService = VimProcess.with(path: binPath, args: args)
         let statusTimer = VimTimer(timeInterval: 1.0) {
@@ -57,12 +58,14 @@ class SPMPlugin: VimPlugin {
         statusTimer.resume()
     }
 
+    // MARK - VimPlugin
+
     enum SPMVimEvent: Int {
         case auQuitPre = 1001
         case auCursorMoved = 1002
     }
 
-    func pluginEvent(event id: Int, context: String) -> String? {
+    public func event(event id: Int, context: String) -> String? {
         guard let spmEvent = SPMVimEvent(rawValue: id) else {
             return nil
         }
