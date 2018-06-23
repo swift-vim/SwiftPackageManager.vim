@@ -45,13 +45,32 @@ public struct EditorService: SKQueueDelegate {
 
     /// The editor listens to updates in this log
     static let LastBuildLogPath = ".build/last_build.log"
-    static let VimUIStatePath = ".build/spm_vim_ui.json"
+
     static let VimQueue = DispatchQueue.init(label: "com.spmvim.es")
 
     public init(host: String, authToken: String, path: String) {
         self.host = host
         self.authToken = authToken
         self.path = path
+
+        // Periodically, ping the RPCServer to see if its up.
+        // if it is not, then assume vim died.
+        // There is no other reasonable way to terminate.
+        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) {
+          _ in
+              let method = "status"
+              let commandPath = host + "/" + method
+              var request = URLRequest(url: URL(string: commandPath)!)
+              request.httpMethod = "GET"
+              let session = URLSession.shared
+              let task = session.dataTask(with: request) {
+                  (data, response, error) in
+                  if (response as? HTTPURLResponse)?.statusCode != 200 {
+                      exit(0)
+                  }
+              }
+              task.resume()
+        }
     }
 
     /// Send a POST request and return the body.
