@@ -47,11 +47,11 @@ $(BUILD_DIR)/libVim.dylib: SWIFT_OPTS=--product Vim \
 	$(BASE_OPTS)
 $(BUILD_DIR)/libVim.dylib:
 $(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib: $(BUILD_DIR)/libVim.dylib
-	ditto $(BUILD_DIR)/Vim.swiftmodule \
+	@ditto $(BUILD_DIR)/Vim.swiftmodule \
 		$(BUILD_DIR)/$(PLUGIN_NAME)Vim.swiftmodule
-	ditto $(BUILD_DIR)/Vim.swiftdoc \
+	@ditto $(BUILD_DIR)/Vim.swiftdoc \
 		$(BUILD_DIR)/$(PLUGIN_NAME)Vim.swiftdoc
-	ditto $(BUILD_DIR)/libVim.dylib \
+	@ditto $(BUILD_DIR)/libVim.dylib \
 		$(BUILD_DIR)/lib$(PLUGIN_NAME)Vim.dylib
 
 $(BUILD_DIR)/libVimAsync.dylib: SWIFT_OPTS=--product VimAsync  \
@@ -59,12 +59,12 @@ $(BUILD_DIR)/libVimAsync.dylib: SWIFT_OPTS=--product VimAsync  \
 	-Xswiftc -module-link-name=$(PLUGIN_NAME)VimAsync \
 	$(BASE_OPTS)
 $(BUILD_DIR)/libVimAsync.dylib:
-$(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib:
-	ditto $(BUILD_DIR)/VimAsync.swiftmodule \
+$(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib: $(BUILD_DIR)/libVimAsync.dylib
+	@ditto $(BUILD_DIR)/VimAsync.swiftmodule \
 		$(BUILD_DIR)/$(PLUGIN_NAME)VimAsync.swiftmodule
-	ditto $(BUILD_DIR)/VimAsync.swiftdoc \
+	@ditto $(BUILD_DIR)/VimAsync.swiftdoc \
 		$(BUILD_DIR)/$(PLUGIN_NAME)VimAsync.swiftdoc
-	ditto $(BUILD_DIR)/libVimAsync.dylib \
+	@ditto $(BUILD_DIR)/libVimAsync.dylib \
 		$(BUILD_DIR)/lib$(PLUGIN_NAME)VimAsync.dylib
 
 # Main plugin lib
@@ -94,7 +94,7 @@ py_vars:
 $(BUILD_DIR)/libVim.dylib $(BUILD_DIR)/libVimAsync.dylib plugin_lib test_b: py_vars
 	@echo "Building.."
 	@mkdir -p .build
-	swift build -c $(CONFIG) \
+	@swift build -c $(CONFIG) \
 	   	$(BASE_OPTS) $(SWIFT_OPTS) $(EXTRA_OPTS) \
 	  	-Xswiftc -target -Xswiftc $(TRIPPLE) \
 	   	| tee $(LAST_LOG)
