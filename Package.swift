@@ -27,7 +27,7 @@ let package = Package(
         .package(url: "https://github.com/swift-vim/http",
              .revision("671be3123752a8eebd18dccb9321e1dfcae8f9c0")),
         .package(url: "https://github.com/swift-vim/SwiftForVim.git",
-             .revision("d8218c47c652d38721795b29c2b29da3c8f3cb37"))
+             .revision("898eb9cd7539d1fdc927ce6c657c64d05ef8a872"))
     ],
 
     targets: [

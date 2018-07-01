@@ -42,7 +42,7 @@ public final class SPMVimPlugin {
           "editor",
           authToken,
           "--port", String(rpcPort),
-          "--path", (try? Vim.eval("expand('%:p')"))?.asString() ?? ""
+          "--path", String(try? Vim.eval("expand('%:p')")) ?? ""
         ]
         let editorService = VimProcess.with(path: binPath, args: args)
         let statusTimer = VimTimer(timeInterval: 1.0) {

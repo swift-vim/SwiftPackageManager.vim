@@ -82,7 +82,7 @@ extension Vim {
         if lineNum != nil && newLineNum > maxLine {
             newLineNum = maxLine
         }
-        let maxColumn = blist[newLineNum - 1].asString()!.utf8.count
+        let maxColumn = String(blist[newLineNum - 1])?.utf8.count ?? 0
         if columnNum != nil && newColumnNum > maxColumn {
             newColumnNum = maxColumn
         }
@@ -132,14 +132,15 @@ extension Vim {
     }
 
     public static func clearIcmSyntaxMatches() {
-        guard let matches = (try? eval("getmatches()"))?.asList() else {
+        guard let value = try? eval("getmatches()"),
+            let matches = VimList(value) else {
             return
         }
         // FIXME: Check types
         for matchValue in matches {
-            if let match = matchValue.asDictionary(),
-                match["group"]?.asString()?.hasPrefix("Icm") == true,
-                let id = match["id"]?.asInt() {
+            if let match = VimDictionary(matchValue),
+                String(match["group"])?.hasPrefix("Icm") == true,
+                let id = Int(match["id"]) {
                 _ = try? eval("matchdelete(\(id))")
             }
         }

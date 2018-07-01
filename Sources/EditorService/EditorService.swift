@@ -157,7 +157,7 @@ public struct EditorService: SKQueueDelegate {
         }
 
         let diags: [Diagnostic] = file.components(separatedBy: "\n")
-            .flatMap { SwiftBuildDiagnostic.from(line: $0) }
+            .compactMap { SwiftBuildDiagnostic.from(line: $0) }
             .map { getDiagnostic(from: $0 ) }
         let message = DiagnosticMessage(originFile: path,
             diagnostics: diags)

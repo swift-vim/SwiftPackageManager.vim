@@ -151,7 +151,7 @@ func GetKeptAndNewSigns(placedSigns: [SignPlacement], bufferNumberToLineToDiags:
 }
 
 func PlaceNewSigns(keptSigns: [SignPlacement], newSigns: [SignPlacement]) -> [SignPlacement] {
-    return newSigns.flatMap {
+    return newSigns.compactMap {
         sign in
         if keptSigns.contains(sign) {
             return nil
